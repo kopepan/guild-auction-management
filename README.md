@@ -223,20 +223,22 @@ Copy everything from `.env.local` into Railway **Variables**, then adjust:
 
 | Variable | Production value |
 | -------- | ---------------- |
-| `AUTH_URL` | Your Railway public URL, e.g. `https://guild-auction-management-production.up.railway.app` (copy from **Settings → Networking → Generate domain**) |
+| `AUTH_URL` | `https://moonshade-auction.up.railway.app` |
 | `ALLOW_DEV_LOGIN` | `false` |
 
-Generate a public domain under **Settings → Networking → Generate domain** before copying
-`AUTH_URL`.
+Public domain: **https://moonshade-auction.up.railway.app**
+(Settings → Networking → Generate / custom domain.)
 
 ### 4. Discord (once you know the public URL)
 
 | Setting | Value |
 | ------- | ----- |
-| OAuth2 redirect | `{AUTH_URL}/api/auth/callback/discord` |
-| Interactions endpoint | `{AUTH_URL}/api/discord/interactions` |
+| OAuth2 redirect | `https://moonshade-auction.up.railway.app/api/auth/callback/discord` |
+| Interactions endpoint | `https://moonshade-auction.up.railway.app/api/discord/interactions` |
 
 Keep the `http://localhost:3000/...` redirects for local development.
+In local `.env.local`, keep `AUTH_URL=http://localhost:3000` — set the Railway URL
+only in Railway **Variables**.
 
 ### 5. Migrate and seed (once)
 

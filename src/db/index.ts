@@ -15,7 +15,9 @@ const globalForDb = globalThis as unknown as {
 };
 
 const isServerless = Boolean(
-  process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME,
+  process.env.NETLIFY ||
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME,
 );
 
 const client =
