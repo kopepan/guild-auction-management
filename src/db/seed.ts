@@ -2,6 +2,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 
 import { parseIsoWeek } from "@/lib/week";
 
+import "./load-env";
 import { db } from ".";
 import {
   eventItems,

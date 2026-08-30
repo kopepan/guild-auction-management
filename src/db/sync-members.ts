@@ -1,3 +1,4 @@
+import "./load-env";
 import { syncDiscordGuildMembers } from "@/lib/discord-members";
 
 async function main() {
