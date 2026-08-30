@@ -200,9 +200,72 @@ npm run dev
 
 Open <http://localhost:3000>.
 
-## Deploy to Netlify
+## Deploy (recommended: Railway — app + database in one place)
 
-Production URL: **https://moon-shade-auction.netlify.app**
+**Railway** is the simplest option when you want the website and PostgreSQL together.
+No separate Neon/Supabase account required.
+
+### 1. Push the repo to GitHub
+
+Railway deploys from Git. If the project is not on GitHub yet, create a repo and push it.
+
+### 2. Create the Railway project
+
+1. Open [railway.app](https://railway.app/) and sign in with GitHub.
+2. **New Project** → **Deploy from GitHub repo** → select this repository.
+3. In the same project, click **+ New** → **Database** → **PostgreSQL**.
+4. Open the **web service** (your app) → **Variables** → **Add variable reference** →
+   pick `DATABASE_URL` from the Postgres service (Railway links them automatically).
+
+### 3. Set the remaining environment variables
+
+Copy everything from `.env.local` into Railway **Variables**, then adjust:
+
+| Variable | Production value |
+| -------- | ---------------- |
+| `AUTH_URL` | Your Railway public URL, e.g. `https://guild-auction-management-production.up.railway.app` (copy from **Settings → Networking → Generate domain**) |
+| `ALLOW_DEV_LOGIN` | `false` |
+
+Generate a public domain under **Settings → Networking → Generate domain** before copying
+`AUTH_URL`.
+
+### 4. Discord (once you know the public URL)
+
+| Setting | Value |
+| ------- | ----- |
+| OAuth2 redirect | `{AUTH_URL}/api/auth/callback/discord` |
+| Interactions endpoint | `{AUTH_URL}/api/discord/interactions` |
+
+Keep the `http://localhost:3000/...` redirects for local development.
+
+### 5. Migrate and seed (once)
+
+After the first deploy, open the Railway **web service** → **Settings** → run in the
+shell (or use Railway CLI):
+
+```bash
+npm run db:migrate
+npm run db:seed
+npm run db:sync-members
+```
+
+Or locally with the Railway Postgres URL:
+
+```bash
+DATABASE_URL="postgresql://..." npm run db:migrate
+DATABASE_URL="postgresql://..." npm run db:seed
+DATABASE_URL="postgresql://..." npm run db:sync-members
+```
+
+(Copy `DATABASE_URL` from the Postgres service → **Connect** tab.)
+
+Build/start commands are in `railway.json` (`npm run build` / `npm run start`).
+
+---
+
+## Deploy to Netlify (alternative — database is separate)
+
+Production URL example: **https://moon-shade-auction.netlify.app**
 
 Netlify cannot reach your local Docker Postgres. Create a hosted database first (Neon or
 Supabase), run migrations against it once, then point Netlify at that connection string.
