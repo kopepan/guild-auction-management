@@ -3,9 +3,11 @@ import { Ban } from "lucide-react";
 
 import type { WishlistCardItem } from "@/components/wishlist-item-card";
 import { WishlistQueueTabs } from "@/components/wishlist-queue-tabs";
+import { ViewAsMemberToggle } from "@/components/view-as-member-toggle";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { getSessionUser } from "@/lib/guards";
 import { requireGearRatingForRegistrationRound } from "@/lib/phase";
+import { isViewAsMember } from "@/lib/view-as-member";
 import {
   getActivePenaltyForUser,
   getRegistrationRound,
@@ -21,6 +23,7 @@ export default async function WishlistPage() {
 
   await requireGearRatingForRegistrationRound();
 
+  const viewAsMember = user.isSystemAdmin && (await isViewAsMember());
   const { t, locale } = await getTranslations();
   const round = await getRegistrationRound();
 
@@ -91,6 +94,12 @@ export default async function WishlistPage() {
 
   return (
     <>
+      {user.isSystemAdmin ? (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3">
+          <ViewAsMemberToggle viewAsMember={viewAsMember} prominent />
+        </div>
+      ) : null}
+
       <PageHeader
         title={t("wishlist.title")}
         subtitle={t("wishlist.subtitle")}

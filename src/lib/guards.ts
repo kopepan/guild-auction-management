@@ -3,8 +3,7 @@ import { cache } from "react";
 
 import { auth } from "@/auth";
 import { ActionError } from "@/lib/action-error";
-import { isSystemAdminRole } from "@/lib/admin-access";
-import { ensureDiscordAdminPromotion } from "@/lib/admin-access-runtime";
+import { resolveIsSystemAdmin } from "@/lib/admin-access-runtime";
 
 export { ActionError };
 
@@ -33,17 +32,18 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   }
   if (!session?.user?.id) return null;
 
-  const role = await ensureDiscordAdminPromotion(
+  const isSystemAdmin = await resolveIsSystemAdmin(
     session.user.id,
     session.user.role,
   );
+  const role = isSystemAdmin ? "admin" : session.user.role;
 
   return {
     id: session.user.id,
     name: session.user.name ?? null,
     image: session.user.image ?? null,
     role,
-    isSystemAdmin: isSystemAdminRole(role),
+    isSystemAdmin,
     characterName: session.user.characterName,
     inGameId: session.user.inGameId,
     gearRating: session.user.gearRating,

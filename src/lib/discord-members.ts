@@ -167,6 +167,7 @@ export async function syncDiscordGuildMembers(): Promise<DiscordMemberSyncResult
         .set({
           name: displayName,
           image,
+          discordRoleIds: member.roles ?? [],
           updatedAt: new Date(),
         })
         .where(eq(users.id, linked.userId));

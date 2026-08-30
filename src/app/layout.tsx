@@ -44,7 +44,10 @@ export default async function RootLayout({
   });
   const adminControls =
     user?.isSystemAdmin ? (
-      <ViewAsMemberToggle viewAsMember={viewAsMember} />
+      <ViewAsMemberToggle
+        viewAsMember={viewAsMember}
+        prominent={registrationChrome}
+      />
     ) : null;
 
   return (

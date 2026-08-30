@@ -1,5 +1,4 @@
 import { createPublicKey, verify } from "node:crypto";
-import { unstable_cache } from "next/cache";
 
 const DISCORD_API = "https://discord.com/api/v10";
 
@@ -222,7 +221,7 @@ export function discordAvatarUrl(user: DiscordMemberUser): string | null {
   return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
 }
 
-async function fetchDiscordMemberRoleIdsUncached(
+export async function fetchGuildMemberRoleIds(
   discordUserId: string,
 ): Promise<string[]> {
   const guildId = getDiscordGuildId();
@@ -241,13 +240,4 @@ async function fetchDiscordMemberRoleIdsUncached(
 
   const member = (await response.json()) as { roles?: string[] };
   return member.roles ?? [];
-}
-
-/** Cached briefly so role-based admin checks do not hit Discord on every navigation. */
-export function getGuildMemberRoleIds(discordUserId: string): Promise<string[]> {
-  return unstable_cache(
-    () => fetchDiscordMemberRoleIdsUncached(discordUserId),
-    ["discord-member-roles", discordUserId],
-    { revalidate: 300 },
-  )();
 }

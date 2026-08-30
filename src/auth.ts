@@ -7,6 +7,7 @@ import Discord from "next-auth/providers/discord";
 import { db } from "@/db";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
 import { shouldPromoteToAdmin } from "@/lib/admin-access";
+import { persistDiscordRoleIds } from "@/lib/admin-access-runtime";
 
 declare module "next-auth" {
   interface Session {
@@ -197,6 +198,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const member = await fetchGuildMember(account.access_token);
         if (member) {
           roles = member.roles;
+          await persistDiscordRoleIds(user.id, roles);
           const guildName = resolveGuildDisplayName(member);
           if (guildName) {
             await db

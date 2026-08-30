@@ -9,7 +9,7 @@ import {
   memberHasAdminDiscordRole,
   shouldPromoteToAdmin,
 } from "@/lib/admin-access";
-import { getGuildMemberRoleIds } from "@/lib/discord";
+import { fetchGuildMemberRoleIds } from "@/lib/discord";
 
 export async function getDiscordAccountIdForUser(
   userId: string,
@@ -22,6 +22,45 @@ export async function getDiscordAccountIdForUser(
   return row?.discordId ?? null;
 }
 
+async function loadStoredDiscordRoleIds(
+  userId: string,
+): Promise<string[] | null> {
+  const record = await db.query.users.findFirst({
+    columns: { discordRoleIds: true },
+    where: eq(users.id, userId),
+  });
+  return record?.discordRoleIds ?? null;
+}
+
+async function saveDiscordRoleIds(userId: string, roles: string[]) {
+  await db
+    .update(users)
+    .set({ discordRoleIds: roles, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
+/** Resolve guild roles from DB, falling back to the Discord bot API. */
+export async function resolveDiscordRoleIds(
+  userId: string,
+  discordId: string,
+): Promise<string[]> {
+  const stored = await loadStoredDiscordRoleIds(userId);
+  if (
+    stored &&
+    stored.length > 0 &&
+    (getAdminDiscordRoleIds().length === 0 ||
+      memberHasAdminDiscordRole(stored))
+  ) {
+    return stored;
+  }
+
+  const roles = await fetchGuildMemberRoleIds(discordId);
+  if (roles.length > 0) {
+    await saveDiscordRoleIds(userId, roles);
+  }
+  return roles;
+}
+
 export async function userHasDiscordAdminAccess(userId: string): Promise<boolean> {
   const adminRoleIds = getAdminDiscordRoleIds();
   const adminUserIds = getAdminDiscordUserIds();
@@ -32,7 +71,7 @@ export async function userHasDiscordAdminAccess(userId: string): Promise<boolean
   if (adminUserIds.includes(discordId)) return true;
   if (adminRoleIds.length === 0) return false;
 
-  const roles = await getGuildMemberRoleIds(discordId);
+  const roles = await resolveDiscordRoleIds(userId, discordId);
   return memberHasAdminDiscordRole(roles);
 }
 
@@ -49,7 +88,7 @@ export async function ensureDiscordAdminPromotion(
   const adminRoleIds = getAdminDiscordRoleIds();
   const roles =
     adminRoleIds.length > 0
-      ? await getGuildMemberRoleIds(discordId)
+      ? await resolveDiscordRoleIds(userId, discordId)
       : undefined;
 
   const [{ value: adminCount }] = await db
@@ -69,4 +108,21 @@ export async function ensureDiscordAdminPromotion(
 
   await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
   return "admin";
+}
+
+export async function resolveIsSystemAdmin(
+  userId: string,
+  currentRole: "member" | "admin",
+): Promise<boolean> {
+  const role = await ensureDiscordAdminPromotion(userId, currentRole);
+  if (isSystemAdminRole(role)) return true;
+  return userHasDiscordAdminAccess(userId);
+}
+
+export async function persistDiscordRoleIds(
+  userId: string,
+  roles: string[] | undefined,
+) {
+  if (!roles || roles.length === 0) return;
+  await saveDiscordRoleIds(userId, roles);
 }

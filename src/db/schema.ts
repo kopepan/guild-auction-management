@@ -97,6 +97,8 @@ export const users = pgTable("user", {
     { onDelete: "set null" },
   ),
   isActive: boolean("is_active").notNull().default(true),
+  /** Latest Discord guild role IDs, refreshed on sign-in or member sync. */
+  discordRoleIds: text("discord_role_ids").array(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
