@@ -7,10 +7,9 @@ export async function isViewAsMember(): Promise<boolean> {
   return store.get(VIEW_AS_MEMBER_COOKIE)?.value === "1";
 }
 
-/** True when the viewer should follow member registration rules. */
 export function actsAsMember(input: {
-  role: "member" | "admin";
+  isSystemAdmin: boolean;
   viewAsMember: boolean;
 }): boolean {
-  return input.role === "member" || input.viewAsMember;
+  return !input.isSystemAdmin || input.viewAsMember;
 }

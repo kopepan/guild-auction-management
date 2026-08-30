@@ -23,7 +23,7 @@ import type { TranslationKey } from "@/lib/i18n/dictionaries";
 type NavUser = {
   name: string | null;
   characterName: string | null;
-  role: "member" | "admin";
+  isSystemAdmin: boolean;
   viewAsMember?: boolean;
 } | null;
 
@@ -48,7 +48,7 @@ export function SiteHeader({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const isAdminMode = user?.role === "admin" && !user.viewAsMember;
+  const isAdminMode = user?.isSystemAdmin && !user.viewAsMember;
 
   const links: { href: string; label: TranslationKey; icon: typeof Moon }[] =
     registrationOnly

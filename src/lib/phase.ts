@@ -18,11 +18,11 @@ async function getRegistrationActor() {
   const user = await getSessionUser();
   if (!user) return null;
 
-  const viewAsMember = user.role === "admin" && (await isViewAsMember());
+  const viewAsMember = user.isSystemAdmin && (await isViewAsMember());
   return {
     user,
     viewAsMember,
-    actsAsMember: actsAsMember({ role: user.role, viewAsMember }),
+    actsAsMember: actsAsMember({ isSystemAdmin: user.isSystemAdmin, viewAsMember }),
   };
 }
 
@@ -123,13 +123,13 @@ export function isRegistrationMemberPath(pathname: string): boolean {
  */
 export function shouldUseRegistrationChrome(input: {
   registrationRound: { id: string } | null | undefined;
-  user: { role: "member" | "admin" } | null;
+  user: { isSystemAdmin: boolean } | null;
   viewAsMember?: boolean;
 }): boolean {
   if (!input.registrationRound || !input.user) return false;
 
   return actsAsMember({
-    role: input.user.role,
+    isSystemAdmin: input.user.isSystemAdmin,
     viewAsMember: Boolean(input.viewAsMember),
   });
 }

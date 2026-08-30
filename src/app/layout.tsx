@@ -43,7 +43,7 @@ export default async function RootLayout({
     viewAsMember,
   });
   const adminControls =
-    user?.role === "admin" ? (
+    user?.isSystemAdmin ? (
       <ViewAsMemberToggle viewAsMember={viewAsMember} />
     ) : null;
 
@@ -61,7 +61,7 @@ export default async function RootLayout({
                 ? {
                     name: user.name,
                     characterName: user.characterName,
-                    role: user.role,
+                    isSystemAdmin: user.isSystemAdmin,
                     viewAsMember,
                   }
                 : null

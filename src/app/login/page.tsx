@@ -20,8 +20,8 @@ export default async function LoginPage() {
   if (user) {
     const round = await getRegistrationRound();
     if (!round) redirect("/");
-    const viewAsMember = user.role === "admin" && (await isViewAsMember());
-    if (user.role === "admin" && !viewAsMember) redirect("/wishlist");
+    const viewAsMember = user.isSystemAdmin && (await isViewAsMember());
+    if (user.isSystemAdmin && !viewAsMember) redirect("/wishlist");
     redirect(await getRegistrationEntryPath(user));
   }
 

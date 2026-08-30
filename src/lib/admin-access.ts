@@ -36,3 +36,7 @@ export function shouldPromoteToAdmin(input: {
   }
   return input.adminCount === 0;
 }
+
+export function isSystemAdminRole(role: "member" | "admin"): boolean {
+  return role === "admin";
+}

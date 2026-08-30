@@ -87,7 +87,7 @@ export async function adminWithdrawAction(
 ): Promise<ActionState> {
   return runAction(async () => {
     const user = await assertUser();
-    if (user.role !== "admin") return failure("error.forbidden");
+    if (!user.isSystemAdmin) return failure("error.forbidden");
 
     const registrationId = String(formData.get("registrationId") ?? "");
     if (!registrationId) return failure("error.notFound");
