@@ -147,6 +147,7 @@ Edit `.env.local`:
 | `DISCORD_BOT_TOKEN`   | Bot token; posts queue messages with Join/Leave buttons.                  |
 | `DISCORD_PUBLIC_KEY`  | Application public key; verifies Discord interaction requests.            |
 | `ADMIN_DISCORD_IDS`   | Comma-separated Discord user IDs that are always managers.                |
+| `ADMIN_DISCORD_ROLE_IDS` | Comma-separated Discord role IDs whose members become managers.        |
 | `ALLOW_DEV_LOGIN`     | `true` enables name-only login for local testing. Never use in production.|
 
 To create the Discord credentials, open the
@@ -178,7 +179,9 @@ Discord. Re-post after registrations change if you want the public list updated.
 
 To find your own Discord user ID for `ADMIN_DISCORD_IDS`, enable **Developer Mode** in
 Discord under Settings → Advanced, then right-click your name and choose *Copy User ID*.
-If you leave it empty, the very first account to sign in becomes the manager.
+For role-based managers, right-click a role in Server Settings → Roles and choose
+*Copy Role ID*, then add it to `ADMIN_DISCORD_ROLE_IDS`.
+If you leave both empty, the very first account to sign in becomes the manager.
 
 ### 5. Create the tables and seed
 

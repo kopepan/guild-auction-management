@@ -4,6 +4,17 @@ import { handleDiscordInteraction } from "@/lib/discord-interactions";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Browser checks use GET; Discord verification uses POST with signed payloads. */
+export async function GET() {
+  const configured = Boolean(getDiscordPublicKey());
+  return Response.json({
+    ok: configured,
+    message: configured
+      ? "Discord interactions endpoint is ready for POST requests."
+      : "DISCORD_PUBLIC_KEY is not set on this deployment.",
+  });
+}
+
 export async function POST(request: Request) {
   const publicKey = getDiscordPublicKey();
   if (!publicKey) {

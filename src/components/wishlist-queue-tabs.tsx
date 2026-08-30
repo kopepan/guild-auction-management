@@ -18,9 +18,11 @@ import {
 } from "@/lib/policy";
 
 export function WishlistQueueTabs({
+  eventId,
   items,
   gearStepComplete,
 }: {
+  eventId: string;
   items: WishlistCardItem[];
   gearStepComplete: boolean;
 }) {
@@ -134,6 +136,7 @@ export function WishlistQueueTabs({
           {visibleItems.map((item) => (
             <WishlistItemCard
               key={`${item.itemId}:${item.wishlistType}`}
+              eventId={eventId}
               item={item}
             />
           ))}

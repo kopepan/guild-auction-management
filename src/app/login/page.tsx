@@ -22,7 +22,7 @@ export default async function LoginPage() {
     if (!round) redirect("/");
     const viewAsMember = user.role === "admin" && (await isViewAsMember());
     if (user.role === "admin" && !viewAsMember) redirect("/wishlist");
-    redirect(await getRegistrationEntryPath(user.id));
+    redirect(await getRegistrationEntryPath(user));
   }
 
   const { t } = await getTranslations();

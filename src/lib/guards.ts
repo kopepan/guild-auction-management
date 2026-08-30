@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { auth } from "@/auth";
 import { ActionError } from "@/lib/action-error";
@@ -13,10 +14,11 @@ export type SessionUser = {
   characterName: string | null;
   inGameId: string | null;
   gearRating: number | null;
+  gearRatingSubmittedEventId: string | null;
   isActive: boolean;
 };
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   let session;
   try {
     session = await auth();
@@ -34,9 +36,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     characterName: session.user.characterName,
     inGameId: session.user.inGameId,
     gearRating: session.user.gearRating,
+    gearRatingSubmittedEventId: session.user.gearRatingSubmittedEventId,
     isActive: session.user.isActive,
   };
-}
+});
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();

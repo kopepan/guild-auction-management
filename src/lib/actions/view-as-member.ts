@@ -18,7 +18,7 @@ export async function enableViewAsMemberAction() {
   });
 
   revalidatePath("/", "layout");
-  redirect(await getRegistrationEntryPath(user.id));
+  redirect(await getRegistrationEntryPath(user));
 }
 
 export async function disableViewAsMemberAction() {

@@ -16,5 +16,5 @@ export default async function AuctionRegisterPage() {
   const viewAsMember = user.role === "admin" && (await isViewAsMember());
   if (user.role === "admin" && !viewAsMember) redirect("/wishlist");
 
-  redirect(await getRegistrationEntryPath(user.id));
+  redirect(await getRegistrationEntryPath(user));
 }

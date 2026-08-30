@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { cache } from "react";
 
 import { db } from "@/db";
 import {
@@ -52,17 +53,15 @@ function sortItemsByDisplayOrder<T extends { nameEn: string }>(rows: T[]): T[] {
 }
 
 /** The round members register against: the single open event. */
-export async function getRegistrationRound() {
+export const getRegistrationRound = cache(async () => {
   return db.query.events.findFirst({
     where: eq(events.status, "open"),
     orderBy: [desc(events.startsOn), desc(events.createdAt)],
   });
-}
+});
 
 /** @deprecated Use {@link getRegistrationRound}. */
-export async function getCurrentRound() {
-  return getRegistrationRound();
-}
+export const getCurrentRound = getRegistrationRound;
 
 /** The round currently in auction (registration closed, queues posted). */
 export async function getAuctionRound() {
@@ -86,7 +85,7 @@ export async function hasActivePenalty(userId: string): Promise<boolean> {
   return (row?.value ?? 0) > 0;
 }
 
-export async function listActivePenalties() {
+export const listActivePenalties = cache(async () => {
   return db
     .select({
       id: penalties.id,
@@ -102,6 +101,27 @@ export async function listActivePenalties() {
         sql`${penalties.endsOn} >= CURRENT_DATE`,
       ),
     );
+});
+
+export async function getActivePenaltyForUser(userId: string) {
+  const [row] = await db
+    .select({
+      id: penalties.id,
+      userId: penalties.userId,
+      startsOn: penalties.startsOn,
+      endsOn: penalties.endsOn,
+      reason: penalties.reason,
+    })
+    .from(penalties)
+    .where(
+      and(
+        eq(penalties.userId, userId),
+        sql`${penalties.startsOn} <= CURRENT_DATE`,
+        sql`${penalties.endsOn} >= CURRENT_DATE`,
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 export async function listPenaltiesForUser(userId: string) {
@@ -271,17 +291,17 @@ export async function listRoundItems(
         return {
           queueType,
           registrationCount: queue.length,
-        entries: queue.map((entry) => ({
-          id: entry.id,
-          name: entry.name,
-          characterName: entry.characterName,
-          gearRatingSnapshot: entry.gearRatingSnapshot,
-          quantityRequested: entry.quantityRequested,
-          carryDepth: entry.carryDepth,
-          status: entry.status,
-          position: entry.position,
-          isMine: entry.userId === userId,
-        })),
+          entries: queue.map((entry) => ({
+            id: entry.id,
+            name: entry.name,
+            characterName: entry.characterName,
+            gearRatingSnapshot: entry.gearRatingSnapshot,
+            quantityRequested: entry.quantityRequested,
+            carryDepth: entry.carryDepth,
+            status: entry.status,
+            position: entry.position,
+            isMine: entry.userId === userId,
+          })),
           myRegistration: mine
             ? {
                 id: mine.id,
@@ -305,6 +325,155 @@ export async function listRoundItems(
       };
     }),
   );
+}
+
+export type WishlistQueueEntry = RoundQueue["entries"][number];
+
+/**
+ * Lighter round catalogue for /wishlist: aggregate counts instead of loading
+ * every queue up front; full queue lists load on demand in the browser.
+ */
+export async function listWishlistRoundItems(
+  eventId: string,
+  userId: string,
+): Promise<RoundItem[]> {
+  const rows = await db
+    .select({
+      eventItemId: eventItems.id,
+      itemId: items.id,
+      nameEn: items.nameEn,
+      nameTh: items.nameTh,
+      category: items.category,
+      queueTypes: eventItems.queueTypes,
+      maxQuantityPerMember: items.maxQuantityPerMember,
+      imageUrl: items.imageUrl,
+      descriptionEn: items.descriptionEn,
+      descriptionTh: items.descriptionTh,
+    })
+    .from(eventItems)
+    .innerJoin(items, eq(items.id, eventItems.itemId))
+    .where(eq(eventItems.eventId, eventId));
+
+  if (rows.length === 0) return [];
+
+  const [countRows, myRegs] = await Promise.all([
+    db
+      .select({
+        itemId: registrations.itemId,
+        queueType: registrations.queueType,
+        registrationCount: count(),
+      })
+      .from(registrations)
+      .where(
+        and(
+          eq(registrations.eventId, eventId),
+          ne(registrations.status, "withdrawn"),
+        ),
+      )
+      .groupBy(registrations.itemId, registrations.queueType),
+    db
+      .select({
+        id: registrations.id,
+        itemId: registrations.itemId,
+        queueType: registrations.queueType,
+        quantityRequested: registrations.quantityRequested,
+        status: registrations.status,
+        carryDepth: registrations.carryDepth,
+      })
+      .from(registrations)
+      .where(
+        and(
+          eq(registrations.eventId, eventId),
+          eq(registrations.userId, userId),
+          ne(registrations.status, "withdrawn"),
+        ),
+      ),
+  ]);
+
+  const countMap = new Map<string, number>();
+  for (const row of countRows) {
+    countMap.set(
+      queueKey(row.itemId, normalizeWishlistType(row.queueType)),
+      Number(row.registrationCount),
+    );
+  }
+
+  const myRefs = myRegs.map((row) => ({
+    itemId: row.itemId,
+    queueType: normalizeWishlistType(row.queueType),
+  }));
+  const orderedQueues =
+    myRefs.length > 0
+      ? await getRoundQueues(eventId, myRefs, { skipPenaltyCheck: true })
+      : new Map<string, QueueRow[]>();
+
+  return sortItemsByDisplayOrder(
+    rows.map((row) => {
+      const queueTypes = normalizeWishlistTypes(row.queueTypes);
+      const itemQueues = queueTypes.map((queueType) => {
+        const key = queueKey(row.itemId, queueType);
+        const mineReg = myRegs.find(
+          (reg) =>
+            reg.itemId === row.itemId &&
+            normalizeWishlistType(reg.queueType) === queueType,
+        );
+        const ordered = orderedQueues.get(key) ?? [];
+        const mine = mineReg
+          ? ordered.find((entry) => entry.userId === userId)
+          : undefined;
+
+        return {
+          queueType,
+          registrationCount: countMap.get(key) ?? 0,
+          entries: [],
+          myRegistration: mine
+            ? {
+                id: mine.id,
+                quantityRequested: mine.quantityRequested,
+                status: mine.status,
+                carryDepth: mine.carryDepth,
+                position: mine.position,
+              }
+            : null,
+        };
+      });
+
+      return {
+        ...row,
+        queueTypes,
+        registrationCount: itemQueues.reduce(
+          (total, queue) => total + queue.registrationCount,
+          0,
+        ),
+        queues: itemQueues,
+      };
+    }),
+  );
+}
+
+export async function getWishlistQueueEntries(
+  eventId: string,
+  itemId: string,
+  queueType: WishlistType,
+  userId: string,
+): Promise<WishlistQueueEntry[]> {
+  const queues = await getRoundQueues(
+    eventId,
+    [{ itemId, queueType }],
+    { skipPenaltyCheck: true },
+  );
+  const queue = queues.get(queueKey(itemId, queueType)) ?? [];
+  return queue.map((entry) => ({
+    id: entry.id,
+    name: entry.name,
+    characterName: entry.characterName,
+    gearRatingSnapshot: entry.gearRatingSnapshot,
+    quantityRequested: entry.quantityRequested,
+    carryDepth: entry.carryDepth,
+    status: entry.status,
+    position: entry.position,
+    isMine: entry.userId === userId,
+  }));
 }
 
 export type QueueRow = QueueCandidate & {
@@ -332,6 +501,7 @@ export function queueKey(itemId: string, queueType: WishlistType) {
 export async function getRoundQueues(
   eventId: string,
   itemRefs: { itemId: string; queueType: WishlistType }[],
+  options?: { skipPenaltyCheck?: boolean },
 ): Promise<Map<string, QueueRow[]>> {
   const result = new Map<string, QueueRow[]>();
   if (itemRefs.length === 0) return result;
@@ -355,7 +525,9 @@ export async function getRoundQueues(
       allocationId: allocations.id,
       allocated: allocations.quantityAllocated,
       allocationStatus: allocations.status,
-      isPenalized: sql<boolean>`EXISTS (
+      isPenalized: options?.skipPenaltyCheck
+        ? sql<boolean>`false`
+        : sql<boolean>`EXISTS (
         SELECT 1 FROM ${penalties} p
         WHERE p.user_id = ${registrations.userId}
           AND p.starts_on <= CURRENT_DATE

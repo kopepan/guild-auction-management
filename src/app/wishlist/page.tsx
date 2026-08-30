@@ -5,20 +5,15 @@ import type { WishlistCardItem } from "@/components/wishlist-item-card";
 import { WishlistQueueTabs } from "@/components/wishlist-queue-tabs";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { getSessionUser } from "@/lib/guards";
+import { requireGearRatingForRegistrationRound } from "@/lib/phase";
 import {
-  requireGearRatingForRegistrationRound,
-} from "@/lib/phase";
-import {
+  getActivePenaltyForUser,
   getRegistrationRound,
-  ensureRoundHasActiveCatalogue,
-  listActivePenalties,
-  listRoundItems,
+  listWishlistRoundItems,
 } from "@/lib/queries";
 import { getTranslations, localized } from "@/lib/i18n/server";
 import { itemAllowsQuantity, wishlistTypeRules } from "@/lib/policy";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
-
-export const dynamic = "force-dynamic";
 
 export default async function WishlistPage() {
   const user = await getSessionUser();
@@ -41,14 +36,10 @@ export default async function WishlistPage() {
     );
   }
 
-  await ensureRoundHasActiveCatalogue(round.id);
-
-  const [roundItems, activePenalties] = await Promise.all([
-    listRoundItems(round.id, user.id),
-    listActivePenalties(),
+  const [roundItems, penalty] = await Promise.all([
+    listWishlistRoundItems(round.id, user.id),
+    getActivePenaltyForUser(user.id),
   ]);
-
-  const penalty = activePenalties.find((row) => row.userId === user.id);
 
   // One Gear Rating queue entry per round, counting anything carried over.
   const gearLimitUsed = roundItems.some(
@@ -144,7 +135,11 @@ export default async function WishlistPage() {
       {cards.length === 0 ? (
         <EmptyState>{t("events.noItems")}</EmptyState>
       ) : (
-        <WishlistQueueTabs items={cards} gearStepComplete={gearStepComplete} />
+        <WishlistQueueTabs
+          eventId={round.id}
+          items={cards}
+          gearStepComplete={gearStepComplete}
+        />
       )}
     </>
   );

@@ -11,13 +11,9 @@ import {
   resolveDiscordDisplayName,
   type DiscordMemberProfile,
 } from "@/lib/discord";
+import { shouldPromoteToAdmin } from "@/lib/admin-access";
 
 const DISCORD_API = "https://discord.com/api/v10";
-
-const adminDiscordIds = (process.env.ADMIN_DISCORD_IDS ?? "")
-  .split(",")
-  .map((id) => id.trim())
-  .filter(Boolean);
 
 export type DiscordMemberSyncResult = {
   created: number;
@@ -32,16 +28,23 @@ export class DiscordMemberSyncError extends Error {
   }
 }
 
-async function promoteIfEligible(userId: string, discordId: string) {
+async function promoteIfEligible(
+  userId: string,
+  discordId: string,
+  roles?: string[],
+) {
   const [{ value: adminCount }] = await db
     .select({ value: count() })
     .from(users)
     .where(eq(users.role, "admin"));
 
-  const shouldPromote =
-    adminDiscordIds.includes(discordId) || adminCount === 0;
-
-  if (shouldPromote) {
+  if (
+    shouldPromoteToAdmin({
+      discordId,
+      roles,
+      adminCount,
+    })
+  ) {
     await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
   }
 }
@@ -167,6 +170,7 @@ export async function syncDiscordGuildMembers(): Promise<DiscordMemberSyncResult
           updatedAt: new Date(),
         })
         .where(eq(users.id, linked.userId));
+      await promoteIfEligible(linked.userId, discordId, member.roles);
       updated += 1;
       continue;
     }
@@ -187,7 +191,7 @@ export async function syncDiscordGuildMembers(): Promise<DiscordMemberSyncResult
       providerAccountId: discordId,
     });
 
-    await promoteIfEligible(createdUser.id, discordId);
+    await promoteIfEligible(createdUser.id, discordId, member.roles);
     created += 1;
   }
 

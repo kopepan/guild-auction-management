@@ -6,6 +6,7 @@ import Discord from "next-auth/providers/discord";
 
 import { db } from "@/db";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
+import { shouldPromoteToAdmin } from "@/lib/admin-access";
 
 declare module "next-auth" {
   interface Session {
@@ -15,20 +16,18 @@ declare module "next-auth" {
       characterName: string | null;
       inGameId: string | null;
       gearRating: number | null;
+      gearRatingSubmittedEventId: string | null;
       isActive: boolean;
     } & DefaultSession["user"];
   }
 }
 
 /**
- * Discord IDs listed here are always admins. As a bootstrap for a brand new
- * install, the very first account to sign in also becomes an admin.
+ * Discord user IDs listed in ADMIN_DISCORD_IDS are always admins.
+ * Members with a role listed in ADMIN_DISCORD_ROLE_IDS also become admins.
+ * As a bootstrap for a brand new install, the very first account to sign in
+ * also becomes an admin.
  */
-const adminDiscordIds = (process.env.ADMIN_DISCORD_IDS ?? "")
-  .split(",")
-  .map((id) => id.trim())
-  .filter(Boolean);
-
 const discordGuildId = process.env.DISCORD_GUILD_ID?.trim() || null;
 
 export const devLoginEnabled =
@@ -40,6 +39,7 @@ const discordConfigured = Boolean(
 
 type DiscordGuildMember = {
   nick?: string | null;
+  roles?: string[];
   user?: {
     username?: string;
     global_name?: string | null;
@@ -49,9 +49,9 @@ type DiscordGuildMember = {
 /**
  * Prefer the MoonShade server nickname, then Discord display name, then username.
  */
-async function fetchGuildDisplayName(
+async function fetchGuildMember(
   accessToken: string,
-): Promise<string | null> {
+): Promise<DiscordGuildMember | null> {
   if (!discordGuildId) return null;
 
   const response = await fetch(
@@ -63,8 +63,10 @@ async function fetchGuildDisplayName(
   );
 
   if (!response.ok) return null;
+  return (await response.json()) as DiscordGuildMember;
+}
 
-  const member = (await response.json()) as DiscordGuildMember;
+function resolveGuildDisplayName(member: DiscordGuildMember): string | null {
   const nick = member.nick?.trim();
   if (nick) return nick;
 
@@ -75,16 +77,23 @@ async function fetchGuildDisplayName(
   return username || null;
 }
 
-async function promoteIfEligible(userId: string, discordId?: string | null) {
+async function promoteIfEligible(
+  userId: string,
+  discordId?: string | null,
+  roles?: string[],
+) {
   const [{ value: adminCount }] = await db
     .select({ value: count() })
     .from(users)
     .where(eq(users.role, "admin"));
 
-  const shouldPromote =
-    (discordId && adminDiscordIds.includes(discordId)) || adminCount === 0;
-
-  if (shouldPromote) {
+  if (
+    shouldPromoteToAdmin({
+      discordId,
+      roles,
+      adminCount,
+    })
+  ) {
     await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
   }
 }
@@ -169,6 +178,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         characterName: record.characterName,
         inGameId: record.inGameId,
         gearRating: record.gearRating,
+        gearRatingSubmittedEventId: record.gearRatingSubmittedEventId,
         isActive: record.isActive,
       };
       return session;
@@ -181,17 +191,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         account?.provider === "discord"
           ? (profile?.id as string | undefined) ?? account.providerAccountId
           : null;
-      await promoteIfEligible(user.id, discordId);
 
+      let roles: string[] | undefined;
       if (account?.provider === "discord" && account.access_token) {
-        const guildName = await fetchGuildDisplayName(account.access_token);
-        if (guildName) {
-          await db
-            .update(users)
-            .set({ name: guildName, updatedAt: new Date() })
-            .where(eq(users.id, user.id));
+        const member = await fetchGuildMember(account.access_token);
+        if (member) {
+          roles = member.roles;
+          const guildName = resolveGuildDisplayName(member);
+          if (guildName) {
+            await db
+              .update(users)
+              .set({ name: guildName, updatedAt: new Date() })
+              .where(eq(users.id, user.id));
+          }
         }
       }
+
+      await promoteIfEligible(user.id, discordId, roles);
     },
   },
 });

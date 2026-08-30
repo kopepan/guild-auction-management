@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { getSessionUser } from "@/lib/guards";
+import { getSessionUser, type SessionUser } from "@/lib/guards";
 import { getRegistrationRound } from "@/lib/queries";
 import { actsAsMember, isViewAsMember } from "@/lib/view-as-member";
 
@@ -41,12 +41,16 @@ export async function memberHasGearRatingForRound(
 
 /** Member landing page while registration is open (GR first, then wishlist). */
 export async function getRegistrationEntryPath(
-  userId: string,
+  user: Pick<
+    SessionUser,
+    "id" | "gearRating" | "gearRatingSubmittedEventId"
+  >,
 ): Promise<"/register/gear-rating" | "/wishlist"> {
   const round = await getRegistrationRound();
   if (!round) return "/wishlist";
 
-  const complete = await memberHasGearRatingForRound(userId, round.id);
+  const complete =
+    user.gearRating != null && user.gearRatingSubmittedEventId === round.id;
   return complete ? "/wishlist" : "/register/gear-rating";
 }
 
@@ -60,7 +64,7 @@ export async function redirectMemberDuringRegistration() {
   const round = await getRegistrationRound();
   if (!round) return;
 
-  redirect(await getRegistrationEntryPath(actor.user.id));
+  redirect(await getRegistrationEntryPath(actor.user));
 }
 
 /**
@@ -73,7 +77,9 @@ export async function requireGearRatingForRegistrationRound() {
   const round = await getRegistrationRound();
   if (!round) return;
 
-  const complete = await memberHasGearRatingForRound(actor.user.id, round.id);
+  const complete =
+    actor.user.gearRating != null &&
+    actor.user.gearRatingSubmittedEventId === round.id;
   if (!complete) redirect("/register/gear-rating");
 }
 
@@ -86,7 +92,9 @@ export async function redirectIfGearRatingCompleteForRound() {
   const round = await getRegistrationRound();
   if (!round) redirect("/wishlist");
 
-  const complete = await memberHasGearRatingForRound(actor.user.id, round.id);
+  const complete =
+    actor.user.gearRating != null &&
+    actor.user.gearRatingSubmittedEventId === round.id;
   if (complete) redirect("/wishlist");
 }
 
@@ -98,7 +106,9 @@ export async function redirectProfileDuringRegistration() {
   const round = await getRegistrationRound();
   if (!round) return;
 
-  const complete = await memberHasGearRatingForRound(actor.user.id, round.id);
+  const complete =
+    actor.user.gearRating != null &&
+    actor.user.gearRatingSubmittedEventId === round.id;
   redirect(complete ? "/wishlist" : "/register/gear-rating");
 }
 

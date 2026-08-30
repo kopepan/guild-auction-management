@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { ChevronDown, MinusCircle, PlusCircle } from "lucide-react";
 
 import { SubmitButton } from "@/components/submit-button";
@@ -10,7 +10,11 @@ import {
   PositionBadge,
   StatusBadge,
 } from "@/components/ui";
-import { registerAction, withdrawAction } from "@/lib/actions/registrations";
+import {
+  fetchWishlistQueueEntriesAction,
+  registerAction,
+  withdrawAction,
+} from "@/lib/actions/registrations";
 import { idleState } from "@/lib/actions/types";
 import { useT } from "@/lib/i18n/client";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
@@ -45,19 +49,57 @@ export type WishlistCardItem = {
   blockedReason: TranslationKey | null;
 };
 
-export function WishlistItemCard({ item }: { item: WishlistCardItem }) {
+export function WishlistItemCard({
+  item,
+  eventId,
+}: {
+  item: WishlistCardItem;
+  eventId: string;
+}) {
   const t = useT();
   const [registerState, register] = useActionState(registerAction, idleState);
   const [withdrawState, withdraw] = useActionState(withdrawAction, idleState);
   const [quantity, setQuantity] = useState(1);
   const [confirmingRegister, setConfirmingRegister] = useState(false);
   const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
+  const [queueEntries, setQueueEntries] = useState(item.queueEntries);
+  const [loadingQueue, setLoadingQueue] = useState(false);
+  const queueLoadedRef = useRef(item.queueEntries.length > 0);
 
   const entry = item.registration;
   const state = entry ? withdrawState : registerState;
   const isOrangeRelic =
     item.name.startsWith("Orange Relic") ||
     item.name.startsWith("Relic สีส้ม");
+
+  async function loadQueueEntries() {
+    if (queueLoadedRef.current || loadingQueue) return;
+    setLoadingQueue(true);
+    try {
+      const entries = await fetchWishlistQueueEntriesAction({
+        eventId,
+        itemId: item.itemId,
+        queueType: item.wishlistType,
+      });
+      setQueueEntries(entries);
+      queueLoadedRef.current = true;
+    } finally {
+      setLoadingQueue(false);
+    }
+  }
+
+  useEffect(() => {
+    if (entry) {
+      void loadQueueEntries();
+    }
+    // Load queue details when the member already registered (details open by default).
+  }, [entry, eventId, item.itemId, item.wishlistType]);
+
+  function handleQueueDetailsToggle(event: React.SyntheticEvent<HTMLDetailsElement>) {
+    if (event.currentTarget.open) {
+      void loadQueueEntries();
+    }
+  }
 
   return (
     <li className="card flex flex-col gap-3 p-4">
@@ -227,6 +269,7 @@ export function WishlistItemCard({ item }: { item: WishlistCardItem }) {
       <details
         className="group mt-auto border-t border-sky-200/10 pt-3"
         open={entry != null}
+        onToggle={handleQueueDetailsToggle}
       >
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-medium text-sky-100/65 transition hover:text-sky-100">
           <span>{t("wishlist.queueDetails", { count: item.queueLength })}</span>
@@ -237,11 +280,13 @@ export function WishlistItemCard({ item }: { item: WishlistCardItem }) {
         </summary>
 
         <div className="mt-3">
-          {item.queueEntries.length === 0 ? (
+          {loadingQueue ? (
+            <p className="text-xs text-white/40">{t("common.saving")}</p>
+          ) : queueEntries.length === 0 ? (
             <EmptyState>{t("items.queueEmpty")}</EmptyState>
           ) : (
             <ol className="space-y-1.5">
-              {item.queueEntries.map((queueEntry) => (
+              {queueEntries.map((queueEntry) => (
                 <li
                   key={queueEntry.id}
                   className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 ${

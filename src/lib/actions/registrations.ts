@@ -17,6 +17,7 @@ import {
   registerForWishlist,
   withdrawFromWishlist,
 } from "@/lib/wishlist-register";
+import { getWishlistQueueEntries } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
 
 function revalidateWishlistPages(eventId: string) {
@@ -114,4 +115,18 @@ export async function adminWithdrawAction(
     revalidateWishlistPages(removed.eventId);
     return success("wishlist.withdrawn");
   });
+}
+
+export async function fetchWishlistQueueEntriesAction(input: {
+  eventId: string;
+  itemId: string;
+  queueType: WishlistType;
+}) {
+  const user = await assertUser();
+  return getWishlistQueueEntries(
+    input.eventId,
+    input.itemId,
+    input.queueType,
+    user.id,
+  );
 }
