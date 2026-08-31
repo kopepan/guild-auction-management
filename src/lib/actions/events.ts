@@ -215,8 +215,15 @@ export async function deleteEventAction(
     const id = String(formData.get("id") ?? "");
     if (!id) return failure("error.notFound");
 
+    const [existing] = await db
+      .select({ id: events.id })
+      .from(events)
+      .where(eq(events.id, id))
+      .limit(1);
+    if (!existing) return failure("error.notFound");
+
     await db.delete(events).where(eq(events.id, id));
-    revalidateEventPages();
+    revalidateEventPages(id);
     return success("adminEvents.deleted");
   });
 }

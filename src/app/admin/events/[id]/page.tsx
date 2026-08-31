@@ -150,10 +150,13 @@ export default async function ManageEventPage({
           event.status === "draft" ? t("adminEvents.openHint") : undefined
         }
         action={
-          <Link href={`/events/${event.id}`} className="btn-ghost btn-sm">
-            <ExternalLink className="size-4" aria-hidden />
-            {t("nav.events")}
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href={`/events/${event.id}`} className="btn-ghost btn-sm">
+              <ExternalLink className="size-4" aria-hidden />
+              {t("nav.events")}
+            </Link>
+            <DeleteEventButton eventId={event.id} variant="inline" />
+          </div>
         }
       />
 

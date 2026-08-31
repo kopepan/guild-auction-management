@@ -250,6 +250,8 @@ const en = {
   "adminEvents.created": "Round created.",
   "adminEvents.updated": "Round updated.",
   "adminEvents.deleted": "Round deleted.",
+  "adminEvents.confirmDelete":
+    "Delete this round and all registrations for it? This cannot be undone.",
   "adminEvents.current": "Current",
   "adminEvents.manage": "Manage",
   "adminEvents.availableItems": "Items offered in this round",
@@ -682,6 +684,8 @@ const th: Record<TranslationKey, string> = {
   "adminEvents.created": "สร้างรอบแล้ว",
   "adminEvents.updated": "อัปเดตรอบแล้ว",
   "adminEvents.deleted": "ลบรอบแล้ว",
+  "adminEvents.confirmDelete":
+    "ลบรอบนี้และการลงชื่อทั้งหมดในรอบ? ไม่สามารถกู้คืนได้",
   "adminEvents.current": "รอบปัจจุบัน",
   "adminEvents.manage": "จัดการ",
   "adminEvents.availableItems": "ไอเทมที่มีในรอบนี้",

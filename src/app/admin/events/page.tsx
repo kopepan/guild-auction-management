@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Package, Plus, Users } from "lucide-react";
 
+import { DeleteEventButton } from "@/components/delete-event-button";
 import { EmptyState, PageHeader, StatusBadge } from "@/components/ui";
 import { listEvents } from "@/lib/queries";
 import { getTranslations, localized } from "@/lib/i18n/server";
@@ -71,13 +72,16 @@ export default async function AdminEventsPage() {
                   </span>
                 </p>
               </div>
-              <Link
-                href={`/admin/events/${event.id}`}
-                className="btn-ghost btn-sm"
-              >
-                {t("adminEvents.manage")}
-                <ArrowRight className="size-4" aria-hidden />
-              </Link>
+              <div className="flex shrink-0 items-center gap-2">
+                <DeleteEventButton eventId={event.id} variant="inline" />
+                <Link
+                  href={`/admin/events/${event.id}`}
+                  className="btn-ghost btn-sm"
+                >
+                  {t("adminEvents.manage")}
+                  <ArrowRight className="size-4" aria-hidden />
+                </Link>
+              </div>
             </li>
           ))}
         </ul>
