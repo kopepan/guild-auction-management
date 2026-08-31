@@ -18,7 +18,7 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { getSessionUser } from "@/lib/guards";
-import { redirectMemberDuringRegistration } from "@/lib/phase";
+import { redirectAdminFromRoot, redirectMemberDuringRegistration } from "@/lib/phase";
 import {
   getCurrentRound,
   getDashboardStats,
@@ -30,6 +30,7 @@ import { getTranslations, localized } from "@/lib/i18n/server";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
 
 export default async function DashboardPage() {
+  await redirectAdminFromRoot();
   await redirectMemberDuringRegistration();
   const user = await getSessionUser();
   const { t, locale } = await getTranslations();

@@ -55,6 +55,16 @@ export async function getRegistrationEntryPath(
 }
 
 /**
+ * Managers land on the admin console instead of the member dashboard.
+ */
+export async function redirectAdminFromRoot() {
+  const user = await getSessionUser();
+  if (!user?.isSystemAdmin) return;
+  if (await isViewAsMember()) return;
+  redirect("/admin");
+}
+
+/**
  * During an open round, members may only browse registration-related pages.
  */
 export async function redirectMemberDuringRegistration() {
