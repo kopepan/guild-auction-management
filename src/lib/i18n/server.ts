@@ -7,6 +7,9 @@ import {
   type Locale,
   type Translator,
 } from "./dictionaries";
+import { localized } from "./localized";
+
+export { localized };
 
 export const LOCALE_COOKIE = "moonshade_locale";
 
@@ -22,17 +25,4 @@ export async function getTranslations(): Promise<{
 }> {
   const locale = await getLocale();
   return { locale, t: createTranslator(locale) };
-}
-
-/**
- * Picks the Thai text when the user reads Thai and it exists, otherwise falls
- * back to English so a half-translated catalogue still renders sensibly.
- */
-export function localized(
-  locale: Locale,
-  en: string | null | undefined,
-  th: string | null | undefined,
-): string {
-  if (locale === "th") return th?.trim() || en?.trim() || "";
-  return en?.trim() || th?.trim() || "";
 }

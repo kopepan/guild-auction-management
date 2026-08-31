@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google";
 
-import { SiteHeader } from "@/components/site-header";
-import { ViewAsMemberToggle } from "@/components/view-as-member-toggle";
-import { getSessionUser } from "@/lib/guards";
-import { LocaleProvider } from "@/lib/i18n/client";
-import { getLocale } from "@/lib/i18n/server";
-import { getRegistrationRound } from "@/lib/queries";
-import { shouldUseRegistrationChrome } from "@/lib/phase";
-import { isViewAsMember } from "@/lib/view-as-member";
+import { AppShellBoundary } from "@/components/app-shell-boundary";
 
 import "./globals.css";
 
@@ -28,55 +21,15 @@ export const metadata: Metadata = {
     "Queue management for MoonShade guild event rewards in Ragnarok: The New World.",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [locale, user, registrationRound, viewAsMember] = await Promise.all([
-    getLocale(),
-    getSessionUser(),
-    getRegistrationRound(),
-    isViewAsMember(),
-  ]);
-  const registrationChrome = shouldUseRegistrationChrome({
-    registrationRound,
-    user,
-    viewAsMember,
-  });
-  const adminControls =
-    user?.isSystemAdmin ? (
-      <ViewAsMemberToggle
-        viewAsMember={viewAsMember}
-        prominent={registrationChrome}
-      />
-    ) : null;
-
   return (
-    <html lang={locale}>
+    <html lang="th">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoThai.variable} font-sans antialiased`}
       >
-        <LocaleProvider locale={locale}>
-          <SiteHeader
-            registrationOnly={registrationChrome}
-            adminControls={adminControls}
-            user={
-              user
-                ? {
-                    name: user.name,
-                    characterName: user.characterName,
-                    isSystemAdmin: user.isSystemAdmin,
-                    viewAsMember,
-                  }
-                : null
-            }
-          />
-          <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
-          {registrationChrome ? null : (
-            <footer className="mx-auto max-w-6xl px-4 pt-4 pb-10 text-center text-xs text-white/30">
-              MoonShade · Ragnarok: The New World
-            </footer>
-          )}
-        </LocaleProvider>
+        <AppShellBoundary>{children}</AppShellBoundary>
       </body>
     </html>
   );

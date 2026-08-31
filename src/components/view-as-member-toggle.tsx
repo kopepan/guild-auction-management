@@ -1,3 +1,5 @@
+"use client";
+
 import { Eye, Shield } from "lucide-react";
 
 import { SubmitButton } from "@/components/submit-button";
@@ -5,16 +7,16 @@ import {
   disableViewAsMemberAction,
   enableViewAsMemberAction,
 } from "@/lib/actions/view-as-member";
-import { getTranslations } from "@/lib/i18n/server";
+import { useT } from "@/lib/i18n/client";
 
-export async function ViewAsMemberToggle({
+export function ViewAsMemberToggle({
   viewAsMember,
   prominent = false,
 }: {
   viewAsMember: boolean;
   prominent?: boolean;
 }) {
-  const { t } = await getTranslations();
+  const t = useT();
   const buttonClass = prominent
     ? "btn-primary btn-sm whitespace-nowrap"
     : "btn-ghost btn-sm whitespace-nowrap";

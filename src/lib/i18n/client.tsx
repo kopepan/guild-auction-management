@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
   createTranslator,
@@ -18,16 +18,23 @@ const LocaleContext = createContext<LocaleContextValue>({
 });
 
 export function LocaleProvider({
-  locale,
+  locale: localeFromBootstrap,
   children,
 }: {
   locale: Locale;
   children: ReactNode;
 }) {
+  const [locale, setLocale] = useState<Locale>(localeFromBootstrap);
+
+  useEffect(() => {
+    setLocale(localeFromBootstrap);
+  }, [localeFromBootstrap]);
+
   const value = useMemo(
     () => ({ locale, t: createTranslator(locale) }),
     [locale],
   );
+
   return (
     <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
   );
