@@ -39,6 +39,7 @@ export default async function EditItemPage({
               nameTh: item.nameTh,
               category: item.category,
               queueTypes: item.queueTypes,
+              minStarstone: item.minStarstone,
               imageUrl: item.imageUrl,
               descriptionEn: item.descriptionEn,
               descriptionTh: item.descriptionTh,

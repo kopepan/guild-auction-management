@@ -36,6 +36,7 @@ export type ItemFormValues = {
   nameTh: string | null;
   category: (typeof categories)[number];
   queueTypes: StoredWishlistType[];
+  minStarstone: number | null;
   imageUrl: string | null;
   descriptionEn: string | null;
   descriptionTh: string | null;
@@ -119,6 +120,29 @@ export function ItemForm({ item }: { item?: ItemFormValues }) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="minStarstone">
+            {t("adminItems.minStarstone")}{" "}
+            <span className="text-white/25 normal-case">
+              ({t("common.optional")})
+            </span>
+          </label>
+          <input
+            id="minStarstone"
+            name="minStarstone"
+            type="number"
+            min={0}
+            step={1}
+            defaultValue={item?.minStarstone ?? ""}
+            className="input"
+            placeholder="0"
+            autoComplete="off"
+          />
+          <p className="mt-1 text-xs text-white/35">
+            {t("adminItems.minStarstoneHint")}
+          </p>
         </div>
 
         <div>

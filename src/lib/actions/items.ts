@@ -35,11 +35,23 @@ const optionalText = z
   .transform((value) => (value.length === 0 ? null : value))
   .nullable();
 
+const optionalInteger = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((value) => {
+    if (value == null) return null;
+    const raw = String(value).trim();
+    if (raw.length === 0) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
+  })
+  .nullable();
+
 const itemSchema = z.object({
   nameEn: z.string().trim().min(1),
   nameTh: optionalText,
   category: z.enum(categories),
   queueTypes: z.array(z.enum(WISHLIST_TYPES)).min(1),
+  minStarstone: optionalInteger,
   imageUrl: optionalText,
   descriptionEn: optionalText,
   descriptionTh: optionalText,
@@ -56,6 +68,7 @@ function parseItemForm(formData: FormData) {
     nameTh: formData.get("nameTh") ?? "",
     category: formData.get("category") ?? "other",
     queueTypes,
+    minStarstone: formData.get("minStarstone") ?? "",
     imageUrl: formData.get("imageUrl") ?? "",
     descriptionEn: formData.get("descriptionEn") ?? "",
     descriptionTh: formData.get("descriptionTh") ?? "",

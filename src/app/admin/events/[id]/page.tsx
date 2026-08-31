@@ -45,6 +45,34 @@ export default async function ManageEventPage({
   );
 
   const eventName = localized(locale, event.nameEn, event.nameTh);
+  const auctionGroups = roundItems.map((item) => ({
+    eventItemId: item.eventItemId,
+    name: localized(locale, item.nameEn, item.nameTh),
+    imageUrl: item.imageUrl,
+    minStarstone: item.minStarstone,
+    queues: item.queueTypes.map((queueType) => ({
+      queueType,
+      entries: (queues.get(queueKey(item.itemId, queueType)) ?? []).map(
+        (entry) => ({
+          registrationId: entry.id,
+          position: entry.position,
+          displayName:
+            entry.characterName || entry.name || t("common.unnamed"),
+          inGameId: entry.inGameId,
+          gearRating: entry.gearRatingSnapshot,
+          quantityRequested: entry.quantityRequested,
+          carryDepth: entry.carryDepth,
+          status: entry.status,
+          allocated: entry.allocated,
+          allocationId: entry.allocationStatus ? entry.allocationId : null,
+          allocationStatus:
+            (entry.allocationStatus as DrawItem["queue"][number]["allocationStatus"]) ??
+            null,
+        }),
+      ),
+    })),
+  }));
+
   const drawItems: DrawItem[] = roundItems.flatMap((item) =>
     item.queueTypes.map((queueType) => ({
       eventItemId: item.eventItemId,
@@ -146,6 +174,7 @@ export default async function ManageEventPage({
                 hasRandomQueues={hasRandomQueues}
                 announcement={announcement}
                 items={drawItems}
+                auctionGroups={auctionGroups}
               />
             </div>
           ) : (

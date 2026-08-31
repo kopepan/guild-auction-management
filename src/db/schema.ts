@@ -164,6 +164,8 @@ export const items = pgTable(
       .default(sql`ARRAY['gear_queue']::wishlist_type[]`),
     /** Optional legacy column; no longer enforced. Kept null for all items. */
     maxQuantityPerMember: integer("max_quantity_per_member"),
+    /** Minimum starstone bid for guild auction of this item. */
+    minStarstone: integer("min_starstone"),
     imageUrl: text("image_url"),
     descriptionEn: text("description_en"),
     descriptionTh: text("description_th"),

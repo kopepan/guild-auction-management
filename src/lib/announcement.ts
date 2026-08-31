@@ -245,3 +245,101 @@ export function splitDiscordMessage(
   if (current) chunks.push(current);
   return chunks;
 }
+
+export type AuctionResultsQueue = {
+  queueLabel: string;
+  bidders: {
+    position: number;
+    displayName: string;
+    inGameId: string | null;
+    discordMention: string | null;
+    quantityRequested: number;
+  }[];
+};
+
+const auctionCopy: Record<
+  Locale,
+  {
+    heading: string;
+    minStarstone: string;
+    bidders: string;
+    noBidders: string;
+    emptyQueue: string;
+    selfBidFooter: string;
+    queueSection: string;
+  }
+> = {
+  en: {
+    heading: "Auction call",
+    minStarstone: "Minimum starstone",
+    bidders: "Selected bidders",
+    noBidders: "No one selected to bid this round.",
+    emptyQueue: "No queue — members may bid freely.",
+    selfBidFooter:
+      "Please coordinate and avoid bidding over each other. Bid at or above the minimum starstone.",
+    queueSection: "Queue",
+  },
+  th: {
+    heading: "ประกาศประมูล",
+    minStarstone: "Starstone ขั้นต่ำ",
+    bidders: "ผู้ที่อยู่ในคิวและพร้อมประมูล",
+    noBidders: "ยังไม่มีผู้ถูกเลือกให้ประมูลในรอบนี้",
+    emptyQueue: "ไม่มีคิว — สมาชิกสามารถประมูลกันเองได้",
+    selfBidFooter:
+      "กรุณาประสานกันและไม่ประมูลทับกัน เริ่มประมูลที่ Starstone ขั้นต่ำขึ้นไป",
+    queueSection: "คิว",
+  },
+};
+
+export function buildAuctionResultsAnnouncement({
+  locale,
+  roundName,
+  itemName,
+  minStarstone,
+  queues,
+  emptyQueue,
+}: {
+  locale: Locale;
+  roundName: string;
+  itemName: string;
+  minStarstone: number | null;
+  queues: AuctionResultsQueue[];
+  emptyQueue: boolean;
+}): string {
+  const text = auctionCopy[locale] ?? auctionCopy.en;
+  const lines: string[] = [`**${roundName} — ${text.heading}**`, "", `🎁 **${itemName}**`];
+
+  if (minStarstone != null) {
+    lines.push(`💎 ${text.minStarstone}: **${minStarstone.toLocaleString()}**`);
+  }
+
+  lines.push("");
+
+  if (emptyQueue) {
+    lines.push(`ℹ️ ${text.emptyQueue}`);
+  } else {
+    let hasBidder = false;
+    for (const queue of queues) {
+      if (queue.bidders.length === 0) continue;
+      hasBidder = true;
+      lines.push(`**${text.queueSection}: ${queue.queueLabel}**`);
+      queue.bidders
+        .sort((a, b) => a.position - b.position)
+        .forEach((bidder, index) => {
+          const id = bidder.inGameId ? ` (${bidder.inGameId})` : "";
+          const mention = bidder.discordMention ?? bidder.displayName;
+          const qty =
+            bidder.quantityRequested > 1 ? ` ×${bidder.quantityRequested}` : "";
+          lines.push(`   ${index + 1}. ${mention}${id}${qty}`);
+        });
+      lines.push("");
+    }
+    if (!hasBidder) {
+      lines.push(`ℹ️ ${text.noBidders}`);
+      lines.push("");
+    }
+  }
+
+  lines.push(text.selfBidFooter);
+  return lines.join("\n");
+}

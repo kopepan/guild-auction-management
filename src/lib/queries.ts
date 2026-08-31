@@ -154,6 +154,7 @@ export async function listAllItems({
       wishlistType: items.wishlistType,
       queueTypes: items.queueTypes,
       maxQuantityPerMember: items.maxQuantityPerMember,
+      minStarstone: items.minStarstone,
       imageUrl: items.imageUrl,
       descriptionEn: items.descriptionEn,
       descriptionTh: items.descriptionTh,
@@ -177,6 +178,7 @@ export type RoundItem = {
   category: ItemCategory;
   queueTypes: WishlistType[];
   maxQuantityPerMember: number | null;
+  minStarstone: number | null;
   imageUrl: string | null;
   descriptionEn: string | null;
   descriptionTh: string | null;
@@ -260,6 +262,7 @@ export async function listRoundItems(
       category: items.category,
       queueTypes: eventItems.queueTypes,
       maxQuantityPerMember: items.maxQuantityPerMember,
+      minStarstone: items.minStarstone,
       imageUrl: items.imageUrl,
       descriptionEn: items.descriptionEn,
       descriptionTh: items.descriptionTh,
@@ -346,6 +349,7 @@ export async function listWishlistRoundItems(
       category: items.category,
       queueTypes: eventItems.queueTypes,
       maxQuantityPerMember: items.maxQuantityPerMember,
+      minStarstone: items.minStarstone,
       imageUrl: items.imageUrl,
       descriptionEn: items.descriptionEn,
       descriptionTh: items.descriptionTh,

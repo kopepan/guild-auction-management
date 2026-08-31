@@ -15,6 +15,7 @@ import {
   users,
 } from "@/db/schema";
 import {
+  buildAuctionResultsAnnouncement,
   buildQueueAnnouncement,
   splitDiscordMessage,
 } from "@/lib/announcement";
@@ -944,5 +945,215 @@ export async function resetDrawAction(
 
     revalidateEventPages(eventId);
     return success("draw.reset");
+  });
+}
+
+export async function rollcallForfeitAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(async () => {
+    await assertAdmin();
+
+    const registrationId = String(formData.get("registrationId") ?? "");
+    if (!registrationId) return failure("error.notFound");
+
+    const [updated] = await db
+      .update(registrations)
+      .set({ status: "forfeited", settledAt: new Date() })
+      .where(
+        and(
+          eq(registrations.id, registrationId),
+          eq(registrations.status, "pending"),
+        ),
+      )
+      .returning({ eventId: registrations.eventId });
+
+    if (!updated) return failure("error.notFound");
+
+    revalidateEventPages(updated.eventId);
+    return success("auction.forfeited");
+  });
+}
+
+export async function rollcallSelectAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(async () => {
+    await assertAdmin();
+
+    const registrationId = String(formData.get("registrationId") ?? "");
+    if (!registrationId) return failure("error.notFound");
+
+    const [updated] = await db
+      .update(registrations)
+      .set({ status: "auctioned", settledAt: null })
+      .where(
+        and(
+          eq(registrations.id, registrationId),
+          eq(registrations.status, "pending"),
+        ),
+      )
+      .returning({ eventId: registrations.eventId });
+
+    if (!updated) return failure("error.notFound");
+
+    revalidateEventPages(updated.eventId);
+    return success("auction.selected");
+  });
+}
+
+/** Posts auction roll-call results (or min starstone only) for one item. */
+export async function publishAuctionResultsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(async () => {
+    await assertAdmin();
+
+    const eventId = String(formData.get("eventId") ?? "");
+    const eventItemId = String(formData.get("eventItemId") ?? "");
+    if (!eventId || !eventItemId) return failure("error.notFound");
+
+    const webhookUrl = getDiscordWebhookUrl();
+    if (!webhookUrl) return failure("discord.notConfigured");
+    if (!getDiscordBotToken()) return failure("discord.botNotConfigured");
+
+    const channelId = await resolveWebhookChannelId(webhookUrl);
+    if (!channelId) return failure("discord.sendFailed");
+
+    const event = await getEvent(eventId);
+    if (!event) return failure("error.notFound");
+    if (event.status !== "locked") return failure("error.registrationOpen");
+
+    const [eventItem] = await db
+      .select({
+        itemId: eventItems.itemId,
+        queueTypes: eventItems.queueTypes,
+        nameEn: items.nameEn,
+        nameTh: items.nameTh,
+        imageUrl: items.imageUrl,
+        minStarstone: items.minStarstone,
+      })
+      .from(eventItems)
+      .innerJoin(items, eq(items.id, eventItems.itemId))
+      .where(
+        and(eq(eventItems.id, eventItemId), eq(eventItems.eventId, eventId)),
+      )
+      .limit(1);
+
+    if (!eventItem) return failure("error.notFound");
+    if (eventItem.minStarstone == null) return failure("error.minStarstoneRequired");
+
+    const queueTypes = normalizeWishlistTypes(eventItem.queueTypes);
+    const queues = await getRoundQueues(
+      eventId,
+      queueTypes.map((queueType) => ({
+        itemId: eventItem.itemId,
+        queueType,
+      })),
+    );
+
+    const allEntries = [...queues.values()].flat();
+    const emptyQueue = allEntries.length === 0;
+
+    const auctioned = await db
+      .select({
+        id: registrations.id,
+        queueType: registrations.queueType,
+        quantityRequested: registrations.quantityRequested,
+        userId: registrations.userId,
+        name: users.name,
+        characterName: users.characterName,
+        inGameId: users.inGameId,
+      })
+      .from(registrations)
+      .innerJoin(users, eq(users.id, registrations.userId))
+      .where(
+        and(
+          eq(registrations.eventId, eventId),
+          eq(registrations.itemId, eventItem.itemId),
+          eq(registrations.status, "auctioned"),
+        ),
+      );
+
+    const discordAccounts =
+      auctioned.length > 0
+        ? await db
+            .select({
+              userId: accounts.userId,
+              discordId: accounts.providerAccountId,
+            })
+            .from(accounts)
+            .where(
+              and(
+                eq(accounts.provider, "discord"),
+                inArray(
+                  accounts.userId,
+                  [...new Set(auctioned.map((row) => row.userId))],
+                ),
+              ),
+            )
+        : [];
+    const discordByUserId = new Map(
+      discordAccounts.map((row) => [row.userId, row.discordId]),
+    );
+
+    const { locale, t } = await getTranslations();
+    const itemName = localized(locale, eventItem.nameEn, eventItem.nameTh);
+    const queuePayload = queueTypes.map((queueType) => {
+      const ordered = queues.get(queueKey(eventItem.itemId, queueType)) ?? [];
+      const positionByRegistrationId = new Map(
+        ordered.map((entry) => [entry.id, entry.position]),
+      );
+      const bidders = auctioned
+        .filter(
+          (row) => normalizeWishlistType(row.queueType) === queueType,
+        )
+        .map((row) => {
+          const discordId = discordByUserId.get(row.userId) ?? null;
+          return {
+            position: positionByRegistrationId.get(row.id) ?? 0,
+            displayName: row.characterName || row.name || t("common.unnamed"),
+            inGameId: row.inGameId,
+            discordMention: discordId ? `<@${discordId}>` : null,
+            quantityRequested: row.quantityRequested,
+          };
+        });
+
+      return {
+        queueLabel: t(`wishlistType.${queueType}` as TranslationKey),
+        bidders,
+      };
+    });
+
+    const message = buildAuctionResultsAnnouncement({
+      locale,
+      roundName: localized(locale, event.nameEn, event.nameTh),
+      itemName,
+      minStarstone: eventItem.minStarstone,
+      queues: queuePayload,
+      emptyQueue,
+    });
+
+    const imageUrl = getDiscordImageUrl(eventItem.imageUrl);
+    const posted = await postBotChannelMessage(channelId, {
+      content: splitDiscordMessage(message)[0],
+      embeds:
+        imageUrl != null
+          ? [
+              {
+                title: itemName,
+                thumbnail: { url: imageUrl },
+              },
+            ]
+          : undefined,
+    });
+
+    if (posted === "failed") return failure("discord.sendFailed");
+
+    revalidateEventPages(eventId);
+    return success("auction.published");
   });
 }

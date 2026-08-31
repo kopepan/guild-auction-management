@@ -223,6 +223,9 @@ const en = {
   "adminItems.maxQuantity": "Max per member",
   "adminItems.maxQuantityHint":
     "Leave empty for no cap. The guild caps Gem Box at 6.",
+  "adminItems.minStarstone": "Minimum starstone",
+  "adminItems.minStarstoneHint":
+    "Lowest starstone bid allowed when this item is auctioned.",
   "adminItems.imageUrl": "Image URL",
   "adminItems.descriptionEn": "Description (English)",
   "adminItems.descriptionTh": "Description (Thai)",
@@ -291,6 +294,25 @@ const en = {
   "draw.announcementHint":
     "Copy this into your guild Discord channel after the draw.",
   "draw.queuePreview": "Queue order",
+
+  "auction.sessionTitle": "Live auction roll call",
+  "auction.sessionHint":
+    "Filter an item, ask each queue member if they are present, then publish the bidders to Discord.",
+  "auction.searchItems": "Search items...",
+  "auction.noItemsFound": "No items match your search.",
+  "auction.minStarstoneLabel": "Minimum starstone: {amount}",
+  "auction.minStarstoneShort": "min {amount}",
+  "auction.minStarstoneMissing": "Set a minimum starstone on this item first.",
+  "auction.rollcallProgress": "{pending} of {total} still waiting for roll call",
+  "auction.absent": "Not present",
+  "auction.present": "Present — select",
+  "auction.publishResults": "Publish bidders to Discord",
+  "auction.publishMinStarstone": "Publish minimum starstone to Discord",
+  "auction.confirmPublish": "Post this item's auction info to Discord?",
+  "auction.forfeited": "Marked as forfeited.",
+  "auction.selected": "Marked as ready to bid.",
+  "auction.published": "Auction info posted to Discord.",
+
   "discord.sendQueue": "Send queue to Discord",
   "discord.selectQueues": "Choose queues to post",
   "discord.selectAll": "Select all",
@@ -383,6 +405,8 @@ const en = {
   "error.unauthorized": "You need to sign in to do that.",
   "error.forbidden": "You do not have permission to do that.",
   "error.notFound": "Not found.",
+  "error.minStarstoneRequired":
+    "Set a minimum starstone on this item before publishing.",
   "error.invalidInput": "Please check the highlighted fields.",
   "error.required": "This field is required.",
   "error.gearRatingRange": "Gear Rating must be a number of 0 or more.",
@@ -630,6 +654,9 @@ const th: Record<TranslationKey, string> = {
   "adminItems.wishlistType": "ประเภทคิว",
   "adminItems.maxQuantity": "จำกัดต่อคน",
   "adminItems.maxQuantityHint": "เว้นว่างหากไม่จำกัด กิลด์กำหนดกล่อง Gem Box ไม่เกิน 6",
+  "adminItems.minStarstone": "Starstone ขั้นต่ำ",
+  "adminItems.minStarstoneHint":
+    "จำนวน Starstone ต่ำสุดที่ใช้ประมูลไอเทมนี้",
   "adminItems.imageUrl": "ลิงก์รูปภาพ",
   "adminItems.descriptionEn": "คำอธิบาย (ภาษาอังกฤษ)",
   "adminItems.descriptionTh": "คำอธิบาย (ภาษาไทย)",
@@ -696,6 +723,25 @@ const th: Record<TranslationKey, string> = {
   "draw.announcement": "ข้อความประกาศสำหรับ Discord",
   "draw.announcementHint": "คัดลอกข้อความนี้ไปประกาศในช่อง Discord ของกิลด์หลังจัดคิว",
   "draw.queuePreview": "ลำดับคิว",
+
+  "auction.sessionTitle": "ไล่ถามคิวประมูล",
+  "auction.sessionHint":
+    "ค้นหาไอเทม ไล่ถามทีละคนในคิว แล้วส่งรายชื่อผู้ประมูลไป Discord",
+  "auction.searchItems": "ค้นหาไอเทม...",
+  "auction.noItemsFound": "ไม่พบไอเทมที่ค้นหา",
+  "auction.minStarstoneLabel": "Starstone ขั้นต่ำ: {amount}",
+  "auction.minStarstoneShort": "ขั้นต่ำ {amount}",
+  "auction.minStarstoneMissing": "กรุณาตั้ง Starstone ขั้นต่ำของไอเทมนี้ก่อน",
+  "auction.rollcallProgress": "เหลืออีก {pending} จาก {total} คนที่ยังไม่ไล่ถาม",
+  "auction.absent": "ไม่อยู่ / สละสิทธิ์",
+  "auction.present": "อยู่ — เลือกประมูล",
+  "auction.publishResults": "ส่งรายชื่อผู้ประมูลไป Discord",
+  "auction.publishMinStarstone": "ส่ง Starstone ขั้นต่ำไป Discord",
+  "auction.confirmPublish": "ส่งข้อมูลประมูลไอเทมนี้ไป Discord?",
+  "auction.forfeited": "บันทึกว่าสละสิทธิ์แล้ว",
+  "auction.selected": "เลือกให้ประมูลแล้ว",
+  "auction.published": "ส่งข้อมูลประมูลไป Discord แล้ว",
+
   "discord.sendQueue": "ส่งข้อมูลคิวไป Discord",
   "discord.selectQueues": "เลือกคิวที่ต้องการส่ง",
   "discord.selectAll": "เลือกทั้งหมด",
@@ -788,6 +834,8 @@ const th: Record<TranslationKey, string> = {
   "error.unauthorized": "กรุณาเข้าสู่ระบบก่อนดำเนินการ",
   "error.forbidden": "คุณไม่มีสิทธิ์ดำเนินการนี้",
   "error.notFound": "ไม่พบข้อมูล",
+  "error.minStarstoneRequired":
+    "กรุณาตั้ง Starstone ขั้นต่ำของไอเทมก่อนส่งข้อมูลประมูล",
   "error.invalidInput": "กรุณาตรวจสอบข้อมูลที่กรอก",
   "error.required": "กรุณากรอกข้อมูลนี้",
   "error.gearRatingRange": "ค่า Gear Rating ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป",

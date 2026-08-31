@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 
 import { ActionMessage } from "@/components/action-message";
+import {
+  AuctionSessionPanel,
+  type AuctionSessionGroup,
+} from "@/components/auction-session-panel";
 import { CopyButton } from "@/components/copy-button";
 import { SubmitButton } from "@/components/submit-button";
 import { ItemThumb, PositionBadge, StatusBadge } from "@/components/ui";
@@ -90,6 +94,7 @@ export function DrawPanel({
   eventId,
   eventStatus,
   items,
+  auctionGroups,
   announcement,
   hasDraw,
   hasRandomQueues,
@@ -97,6 +102,7 @@ export function DrawPanel({
   eventId: string;
   eventStatus: "draft" | "open" | "locked" | "completed";
   items: DrawItem[];
+  auctionGroups: AuctionSessionGroup[];
   announcement: string;
   hasDraw: boolean;
   hasRandomQueues: boolean;
@@ -185,6 +191,10 @@ export function DrawPanel({
 
       {isAuction ? (
         <p className="text-sm text-amber-200/80">{t("phase.auctionPhase")}</p>
+      ) : null}
+
+      {isAuction ? (
+        <AuctionSessionPanel eventId={eventId} groups={auctionGroups} />
       ) : null}
 
       {isAuction ? (
