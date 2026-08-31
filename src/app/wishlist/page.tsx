@@ -13,6 +13,7 @@ import {
   getRegistrationRound,
   listWishlistRoundItems,
 } from "@/lib/queries";
+import { hasGearQueueSlotUsed } from "@/lib/gear-queue-limit";
 import { getTranslations, localized } from "@/lib/i18n/server";
 import { itemAllowsQuantity, wishlistTypeRules } from "@/lib/policy";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
@@ -39,20 +40,11 @@ export default async function WishlistPage() {
     );
   }
 
-  const [roundItems, penalty] = await Promise.all([
+  const [roundItems, penalty, gearLimitUsed] = await Promise.all([
     listWishlistRoundItems(round.id, user.id),
     getActivePenaltyForUser(user.id),
+    hasGearQueueSlotUsed(user.id, round.id),
   ]);
-
-  // One Gear Rating queue entry per round, counting anything carried over.
-  const gearLimitUsed = roundItems.some(
-    (item) =>
-      item.queues.some(
-        (queue) =>
-          wishlistTypeRules[queue.queueType].countsTowardWeeklyLimit &&
-          queue.myRegistration !== null,
-      ),
-  );
 
   const hasGearQueueItems = roundItems.some((item) =>
     item.queues.some((queue) => queue.queueType === "gear_queue"),

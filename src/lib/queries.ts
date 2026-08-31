@@ -430,13 +430,13 @@ export async function listWishlistRoundItems(
           queueType,
           registrationCount: countMap.get(key) ?? 0,
           entries: [],
-          myRegistration: mine
+          myRegistration: mineReg
             ? {
-                id: mine.id,
-                quantityRequested: mine.quantityRequested,
-                status: mine.status,
-                carryDepth: mine.carryDepth,
-                position: mine.position,
+                id: mineReg.id,
+                quantityRequested: mineReg.quantityRequested,
+                status: mineReg.status,
+                carryDepth: mineReg.carryDepth,
+                position: mine?.position ?? null,
               }
             : null,
         };

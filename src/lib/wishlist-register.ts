@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { eventItems, items, registrations, users } from "@/db/schema";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
+import { hasGearQueueSlotUsed } from "@/lib/gear-queue-limit";
 import {
   itemAllowsQuantity,
   normalizeWishlistType,
@@ -120,28 +121,20 @@ export async function registerForWishlist(input: {
   }
 
   if (rules.countsTowardWeeklyLimit) {
-    const alreadyQueued = mine.some(
-      (entry) =>
-        wishlistTypeRules[normalizeWishlistType(entry.queueType)]
-          .countsTowardWeeklyLimit,
-    );
-    if (alreadyQueued) return { ok: false, message: "error.weeklyGearLimit" };
+    if (await hasGearQueueSlotUsed(userId, round.id)) {
+      return { ok: false, message: "error.weeklyGearLimit" };
+    }
   }
 
   if (input.queueType !== "gear_queue") {
-    const gearQueued = mine.some(
-      (entry) =>
-        wishlistTypeRules[normalizeWishlistType(entry.queueType)]
-          .countsTowardWeeklyLimit,
-    );
-    const gearItemsInRound = await db
+    const hasGearQueueItems = await db
       .select({ queueTypes: eventItems.queueTypes })
       .from(eventItems)
       .where(eq(eventItems.eventId, round.id));
-    const hasGearQueueItems = gearItemsInRound.some((row) =>
+    const gearItemsExist = hasGearQueueItems.some((row) =>
       normalizeWishlistTypes(row.queueTypes).includes("gear_queue"),
     );
-    if (hasGearQueueItems && !gearQueued) {
+    if (gearItemsExist && !(await hasGearQueueSlotUsed(userId, round.id))) {
       return { ok: false, message: "error.completeGearQueueFirst" };
     }
   }

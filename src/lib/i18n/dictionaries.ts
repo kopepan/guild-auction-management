@@ -99,7 +99,8 @@ const en = {
   "wishlist.registeredThisWeek": "Registered this week",
   "wishlist.gearLimitUsed":
     "You have used your one Gear Rating queue entry for this round.",
-  "wishlist.gearLimitHint": "One Gear Rating queue item per round.",
+  "wishlist.gearLimitHint":
+    "One Gear Rating queue item per round (includes carried entries from last week).",
   "wishlist.quantityLabel": "How many?",
   "wishlist.queueDetails": "View queue ({count})",
   "wishlist.maxQuantity": "up to {max}",
@@ -534,7 +535,8 @@ const th: Record<TranslationKey, string> = {
   "wishlist.carriedFromPrevious": "คิวตกค้างจากสัปดาห์ก่อน",
   "wishlist.registeredThisWeek": "คิวของสัปดาห์นี้",
   "wishlist.gearLimitUsed": "คุณใช้สิทธิคิวตาม Gear Rating ของรอบนี้ไปแล้ว",
-  "wishlist.gearLimitHint": "คิวตาม Gear Rating ลงชื่อได้ 1 ชิ้นต่อรอบ",
+  "wishlist.gearLimitHint":
+    "คิวตาม Gear Rating ลงชื่อได้ 1 ชิ้นต่อรอบ (รวมคิวที่ยกมาจากสัปดาห์ก่อน)",
   "wishlist.quantityLabel": "ต้องการจำนวนเท่าใด",
   "wishlist.queueDetails": "ดูข้อมูลคิว ({count})",
   "wishlist.maxQuantity": "ไม่เกิน {max}",
