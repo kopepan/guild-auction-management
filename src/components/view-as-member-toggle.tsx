@@ -25,7 +25,7 @@ export async function ViewAsMemberToggle({
         <span className="rounded-lg border border-amber-400/25 bg-amber-400/10 px-2 py-1 text-[11px] text-amber-200">
           {t("nav.viewAsMemberActive")}
         </span>
-        <SubmitButton className={buttonClass}>
+        <SubmitButton className={buttonClass} pendingLabel={t("common.loading")}>
           <Shield className="size-4" aria-hidden />
           {t("nav.exitViewAsMember")}
         </SubmitButton>
@@ -35,7 +35,7 @@ export async function ViewAsMemberToggle({
 
   return (
     <form action={enableViewAsMemberAction}>
-      <SubmitButton className={buttonClass}>
+      <SubmitButton className={buttonClass} pendingLabel={t("common.loading")}>
         <Eye className="size-4" aria-hidden />
         {t("nav.viewAsMember")}
       </SubmitButton>

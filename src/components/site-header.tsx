@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { LocaleToggle } from "@/components/locale-toggle";
+import { SubmitButton } from "@/components/submit-button";
 import { signOutAction } from "@/lib/actions/auth";
 import { useT } from "@/lib/i18n/client";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
@@ -81,13 +82,13 @@ export function SiteHeader({
             <div className="ml-auto flex items-center gap-2">
               {adminControls}
               <form action={signOutAction}>
-                <button
-                  type="submit"
+                <SubmitButton
                   title={t("nav.signOut")}
                   className="btn-ghost btn-sm"
+                  pendingLabel={t("common.loading")}
                 >
                   <LogOut className="size-4" aria-hidden />
-                </button>
+                </SubmitButton>
               </form>
             </div>
           ) : null}
@@ -150,13 +151,13 @@ export function SiteHeader({
                 </span>
               )}
               <form action={signOutAction}>
-                <button
-                  type="submit"
+                <SubmitButton
                   title={t("nav.signOut")}
                   className="btn-ghost btn-sm"
+                  pendingLabel={t("common.loading")}
                 >
                   <LogOut className="size-4" aria-hidden />
-                </button>
+                </SubmitButton>
               </form>
             </>
           ) : (
@@ -201,9 +202,12 @@ export function SiteHeader({
             {adminControls}
             {user ? (
               <form action={signOutAction}>
-                <button type="submit" className="btn-ghost btn-sm">
+                <SubmitButton
+                  className="btn-ghost btn-sm"
+                  pendingLabel={t("common.loading")}
+                >
                   <LogOut className="size-4" aria-hidden />
-                </button>
+                </SubmitButton>
               </form>
             ) : (
               <Link

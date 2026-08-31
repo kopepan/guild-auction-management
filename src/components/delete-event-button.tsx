@@ -38,6 +38,7 @@ export function DeleteEventButton({
             className="btn-danger btn-sm"
             confirm={confirm}
             title={t("common.delete")}
+            pendingLabel={t("common.deleting")}
           >
             <Trash2 className="size-4" aria-hidden />
             <span className="sr-only">{t("common.delete")}</span>
@@ -52,7 +53,7 @@ export function DeleteEventButton({
     <div className="space-y-3">
       <form action={formAction}>
         <input type="hidden" name="id" value={eventId} />
-        <SubmitButton className="btn-danger" confirm={confirm}>
+        <SubmitButton className="btn-danger" confirm={confirm} pendingLabel={t("common.deleting")}>
           <Trash2 className="size-4" aria-hidden />
           {t("common.delete")}
         </SubmitButton>

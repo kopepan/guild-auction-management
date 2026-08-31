@@ -25,6 +25,9 @@ const en = {
 
   "common.save": "Save",
   "common.saving": "Saving...",
+  "common.loading": "Loading...",
+  "common.processing": "Processing...",
+  "common.deleting": "Deleting...",
   "common.cancel": "Cancel",
   "common.create": "Create",
   "common.edit": "Edit",
@@ -58,6 +61,7 @@ const en = {
   "login.devHint":
     "Local testing only. Enter any character name to create a session.",
   "login.devSubmit": "Sign in locally",
+  "login.signingIn": "Signing in...",
   "login.notConfigured":
     "Discord sign-in is not configured yet. Add AUTH_DISCORD_ID and AUTH_DISCORD_SECRET to your environment.",
 
@@ -87,6 +91,8 @@ const en = {
     "No round is open for registration. Watch Discord for the next one.",
   "wishlist.register": "Queue up",
   "wishlist.withdraw": "Withdraw",
+  "wishlist.withdrawing": "Withdrawing...",
+  "wishlist.registering": "Registering...",
   "wishlist.registered": "You are queued up.",
   "wishlist.withdrawn": "Your entry was withdrawn.",
   "wishlist.myEntries": "Your entries",
@@ -264,6 +270,7 @@ const en = {
   "carry.subtitle":
     "Rolls entries from the previous round that missed out into this one. They are drawn ahead of new registrations. Members who forfeited for lack of diamonds or who were serving a ban do not carry over.",
   "carry.run": "Carry over from previous round",
+  "carry.running": "Carrying over...",
   "carry.done": "Entries carried over.",
   "carry.nothingToCarry": "There is nothing to carry over.",
 
@@ -271,11 +278,13 @@ const en = {
   "draw.subtitle":
     "Order each queue by its own rule, then review each requested quantity and mark who received the item or forfeited.",
   "draw.run": "Draw round",
+  "draw.drawing": "Drawing...",
   "draw.redraw": "Draw again",
   "draw.done": "Round drawn.",
   "draw.reset": "Draw cleared.",
   "draw.resetButton": "Clear draw",
   "draw.reshuffle": "Reshuffle random queues",
+  "draw.reshuffling": "Shuffling...",
   "draw.reshuffled": "Random queues reshuffled.",
   "draw.noItems": "No catalogue items are available for this round.",
   "draw.auctioned": "Auctioned",
@@ -468,6 +477,9 @@ const th: Record<TranslationKey, string> = {
 
   "common.save": "บันทึก",
   "common.saving": "กำลังบันทึก...",
+  "common.loading": "กำลังโหลด...",
+  "common.processing": "กำลังดำเนินการ...",
+  "common.deleting": "กำลังลบ...",
   "common.cancel": "ยกเลิก",
   "common.create": "สร้าง",
   "common.edit": "แก้ไข",
@@ -500,6 +512,7 @@ const th: Record<TranslationKey, string> = {
   "login.devHint":
     "ใช้สำหรับทดสอบในเครื่องเท่านั้น ใส่ชื่อตัวละครใดก็ได้เพื่อเข้าสู่ระบบ",
   "login.devSubmit": "เข้าสู่ระบบในเครื่อง",
+  "login.signingIn": "กำลังเข้าสู่ระบบ...",
   "login.notConfigured":
     "ยังไม่ได้ตั้งค่าการเข้าสู่ระบบด้วย Discord กรุณาเพิ่ม AUTH_DISCORD_ID และ AUTH_DISCORD_SECRET",
 
@@ -526,6 +539,8 @@ const th: Record<TranslationKey, string> = {
   "wishlist.noRound": "ยังไม่มีรอบที่เปิดให้ลงชื่อ กรุณาติดตามประกาศใน Discord",
   "wishlist.register": "ลงชื่อจองคิว",
   "wishlist.withdraw": "ยกเลิกการลงชื่อ",
+  "wishlist.withdrawing": "กำลังยกเลิก...",
+  "wishlist.registering": "กำลังลงชื่อ...",
   "wishlist.registered": "ลงชื่อจองคิวเรียบร้อย",
   "wishlist.withdrawn": "ยกเลิกการลงชื่อแล้ว",
   "wishlist.myEntries": "รายการของคุณ",
@@ -697,6 +712,7 @@ const th: Record<TranslationKey, string> = {
   "carry.subtitle":
     "ยกรายการของรอบก่อนที่ยังไม่ได้รับของมายังรอบนี้ โดยจะอยู่หน้าคนที่ลงชื่อใหม่ ผู้ที่สละสิทธิเพราะเพชรไม่พอ หรือถูกตัดสิทธิ จะไม่ถูกยกคิวมา",
   "carry.run": "ยกคิวจากรอบก่อน",
+  "carry.running": "กำลังยกคิว...",
   "carry.done": "ยกคิวเรียบร้อย",
   "carry.nothingToCarry": "ไม่มีรายการที่ต้องยกคิว",
 
@@ -704,11 +720,13 @@ const th: Record<TranslationKey, string> = {
   "draw.subtitle":
     "จัดลำดับคิวแต่ละไอเทมตามกติกา แล้วพิจารณาจำนวนที่สมาชิกขอเพื่อยืนยันว่าใครรับของแล้วหรือสละสิทธิ",
   "draw.run": "จัดคิว",
+  "draw.drawing": "กำลังจัดคิว...",
   "draw.redraw": "จัดคิวใหม่",
   "draw.done": "จัดคิวเรียบร้อย",
   "draw.reset": "ล้างผลการจัดคิวแล้ว",
   "draw.resetButton": "ล้างผลการจัดคิว",
   "draw.reshuffle": "สุ่มคิวใหม่",
+  "draw.reshuffling": "กำลังสุ่มคิว...",
   "draw.reshuffled": "สุ่มคิวใหม่เรียบร้อย",
   "draw.noItems": "ไม่พบไอเทมที่ active ในรอบนี้",
   "draw.auctioned": "ประมูลแล้ว",

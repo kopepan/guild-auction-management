@@ -54,7 +54,7 @@ export function MemberActions({
           name="role"
           value={role === "admin" ? "member" : "admin"}
         />
-        <SubmitButton className="btn-ghost btn-sm">
+        <SubmitButton className="btn-ghost btn-sm" pendingLabel={t("common.processing")}>
           {role === "admin" ? (
             <ShieldOff className="size-3.5" aria-hidden />
           ) : (
@@ -69,7 +69,7 @@ export function MemberActions({
       <form action={activeAction}>
         <input type="hidden" name="userId" value={userId} />
         <input type="hidden" name="isActive" value={String(!isActive)} />
-        <SubmitButton className="btn-ghost btn-sm">
+        <SubmitButton className="btn-ghost btn-sm" pendingLabel={t("common.processing")}>
           {isActive ? (
             <UserX className="size-3.5" aria-hidden />
           ) : (
@@ -84,7 +84,7 @@ export function MemberActions({
       {activePenaltyId ? (
         <form action={liftPenalty}>
           <input type="hidden" name="penaltyId" value={activePenaltyId} />
-          <SubmitButton className="btn-ghost btn-sm">
+          <SubmitButton className="btn-ghost btn-sm" pendingLabel={t("common.processing")}>
             {t("penalty.lift")}
           </SubmitButton>
         </form>
@@ -122,7 +122,7 @@ export function MemberActions({
               {t("penalty.reason")}
               <input type="text" name="reason" className="input" />
             </label>
-            <SubmitButton className="btn-primary btn-sm">
+            <SubmitButton className="btn-primary btn-sm" pendingLabel={t("common.processing")}>
               {t("penalty.issue")}
             </SubmitButton>
           </div>

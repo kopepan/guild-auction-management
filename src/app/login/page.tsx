@@ -40,7 +40,7 @@ export default async function LoginPage() {
       <Card>
         {discordConfigured ? (
           <form action={signInWithDiscordAction}>
-            <SubmitButton className="btn-primary w-full">
+            <SubmitButton className="btn-primary w-full" pendingLabel={t("login.signingIn")}>
               {t("login.discord")}
             </SubmitButton>
           </form>
@@ -69,7 +69,10 @@ export default async function LoginPage() {
                 placeholder="MoonKnight"
                 autoComplete="off"
               />
-              <SubmitButton className="btn-ghost whitespace-nowrap">
+              <SubmitButton
+                className="btn-ghost whitespace-nowrap"
+                pendingLabel={t("login.signingIn")}
+              >
                 {t("login.devSubmit")}
               </SubmitButton>
             </div>

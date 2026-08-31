@@ -267,7 +267,10 @@ function RollcallRow({
               name="registrationId"
               value={entry.registrationId}
             />
-            <SubmitButton className="btn-ghost btn-sm">
+            <SubmitButton
+              className="btn-ghost btn-sm"
+              pendingLabel={t("common.processing")}
+            >
               <UserX className="size-3.5" aria-hidden />
               {t("auction.absent")}
             </SubmitButton>
@@ -278,7 +281,10 @@ function RollcallRow({
               name="registrationId"
               value={entry.registrationId}
             />
-            <SubmitButton className="btn-primary btn-sm">
+            <SubmitButton
+              className="btn-primary btn-sm"
+              pendingLabel={t("common.processing")}
+            >
               <UserCheck className="size-3.5" aria-hidden />
               {t("auction.present")}
             </SubmitButton>

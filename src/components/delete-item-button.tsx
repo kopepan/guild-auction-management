@@ -23,7 +23,11 @@ export function DeleteItemButton({ itemId }: { itemId: string }) {
     <div className="space-y-3">
       <form action={formAction}>
         <input type="hidden" name="id" value={itemId} />
-        <SubmitButton className="btn-danger" confirm={t("common.confirmDelete")}>
+        <SubmitButton
+          className="btn-danger"
+          confirm={t("common.confirmDelete")}
+          pendingLabel={t("common.deleting")}
+        >
           <Trash2 className="size-4" aria-hidden />
           {t("common.delete")}
         </SubmitButton>

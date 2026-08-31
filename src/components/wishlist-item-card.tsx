@@ -10,6 +10,7 @@ import {
   PositionBadge,
   StatusBadge,
 } from "@/components/ui";
+import { LoadingState } from "@/components/spinner";
 import {
   fetchWishlistQueueEntriesAction,
   registerAction,
@@ -172,7 +173,10 @@ export function WishlistItemCard({
                       name="registrationId"
                       value={entry.id}
                     />
-                    <SubmitButton className="btn-ghost btn-sm">
+                    <SubmitButton
+                      className="btn-ghost btn-sm"
+                      pendingLabel={t("wishlist.withdrawing")}
+                    >
                       {t("wishlist.confirmWithdraw")}
                     </SubmitButton>
                   </form>
@@ -231,7 +235,10 @@ export function WishlistItemCard({
               {item.allowsQuantity ? (
                 <input type="hidden" name="quantity" value={quantity} />
               ) : null}
-              <SubmitButton className="btn-primary btn-sm">
+              <SubmitButton
+                className="btn-primary btn-sm"
+                pendingLabel={t("wishlist.registering")}
+              >
                 {t("wishlist.confirmSubmit")}
               </SubmitButton>
             </form>
@@ -281,7 +288,7 @@ export function WishlistItemCard({
 
         <div className="mt-3">
           {loadingQueue ? (
-            <p className="text-xs text-white/40">{t("common.saving")}</p>
+            <LoadingState label={t("common.loading")} className="py-4" />
           ) : queueEntries.length === 0 ? (
             <EmptyState>{t("items.queueEmpty")}</EmptyState>
           ) : (

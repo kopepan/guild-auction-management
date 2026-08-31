@@ -170,7 +170,10 @@ export function DrawPanel({
           </p>
           <form action={publishRegistrationLink}>
             <input type="hidden" name="eventId" value={eventId} />
-            <SubmitButton confirm={t("discord.confirmRegistrationLink")}>
+            <SubmitButton
+              confirm={t("discord.confirmRegistrationLink")}
+              pendingLabel={t("discord.sending")}
+            >
               <Send className="size-4" aria-hidden />
               {t("discord.sendRegistrationLink")}
             </SubmitButton>
@@ -180,6 +183,7 @@ export function DrawPanel({
             <SubmitButton
               className="btn-ghost"
               confirm={t("phase.confirmLockRegistration")}
+              pendingLabel={t("common.processing")}
             >
               {t("phase.lockRegistration")}
             </SubmitButton>
@@ -201,7 +205,7 @@ export function DrawPanel({
         <div className="flex flex-wrap items-center gap-2">
         <form action={carry}>
           <input type="hidden" name="eventId" value={eventId} />
-          <SubmitButton className="btn-ghost">
+          <SubmitButton className="btn-ghost" pendingLabel={t("carry.running")}>
             <RotateCcw className="size-4" aria-hidden />
             {t("carry.run")}
           </SubmitButton>
@@ -210,7 +214,10 @@ export function DrawPanel({
         {hasRandomQueues ? (
           <form action={reshuffle}>
             <input type="hidden" name="eventId" value={eventId} />
-            <SubmitButton className="btn-ghost">
+            <SubmitButton
+              className="btn-ghost"
+              pendingLabel={t("draw.reshuffling")}
+            >
               <Dices className="size-4" aria-hidden />
               {t("draw.reshuffle")}
             </SubmitButton>
@@ -219,7 +226,7 @@ export function DrawPanel({
 
         <form action={draw}>
           <input type="hidden" name="eventId" value={eventId} />
-          <SubmitButton>
+          <SubmitButton pendingLabel={t("draw.drawing")}>
             <Shuffle className="size-4" aria-hidden />
             {hasDraw ? t("draw.redraw") : t("draw.run")}
           </SubmitButton>
@@ -228,7 +235,11 @@ export function DrawPanel({
         {hasDraw ? (
           <form action={reset}>
             <input type="hidden" name="eventId" value={eventId} />
-            <SubmitButton className="btn-ghost" confirm={t("draw.settleHint")}>
+            <SubmitButton
+              className="btn-ghost"
+              confirm={t("draw.settleHint")}
+              pendingLabel={t("common.processing")}
+            >
               {t("draw.resetButton")}
             </SubmitButton>
           </form>
@@ -524,24 +535,24 @@ function QueueRow({
               name="allocationId"
               value={entry.allocationId}
             />
-            <button
-              type="submit"
+            <SubmitButton
               name="decision"
               value="received"
               className="btn-ghost btn-sm"
+              pendingLabel={t("common.saving")}
             >
               <Check className="size-3.5" aria-hidden />
               {t("draw.markReceived")}
-            </button>
-            <button
-              type="submit"
+            </SubmitButton>
+            <SubmitButton
               name="decision"
               value="forfeited"
               className="btn-ghost btn-sm"
+              pendingLabel={t("common.saving")}
             >
               <Coins className="size-3.5" aria-hidden />
               {t("draw.markForfeited")}
-            </button>
+            </SubmitButton>
           </form>
         </div>
       ) : canMarkReceived ? (
@@ -556,7 +567,10 @@ function QueueRow({
               name="registrationId"
               value={entry.registrationId}
             />
-            <SubmitButton className="btn-ghost btn-sm">
+            <SubmitButton
+              className="btn-ghost btn-sm"
+              pendingLabel={t("common.saving")}
+            >
               <Check className="size-3.5" aria-hidden />
               {t("draw.markReceived")}
             </SubmitButton>
