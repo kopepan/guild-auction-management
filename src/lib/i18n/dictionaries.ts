@@ -490,9 +490,9 @@ const th: Record<TranslationKey, string> = {
   "nav.adminRules": "กติกา",
   "nav.signIn": "เข้าสู่ระบบ",
   "nav.signOut": "ออกจากระบบ",
-  "nav.viewAsMember": "ทดสอบฝั่งสมาชิก",
+  "nav.viewAsMember": "โหมดสมาชิก",
   "nav.exitViewAsMember": "กลับโหมดแอดมิน",
-  "nav.viewAsMemberActive": "โหมดทดสอบสมาชิก",
+  "nav.viewAsMemberActive": "โหมดสมาชิก",
 
   "common.save": "บันทึก",
   "common.saving": "กำลังบันทึก...",
