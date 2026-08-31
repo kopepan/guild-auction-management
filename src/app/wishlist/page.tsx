@@ -6,7 +6,7 @@ import { WishlistQueueTabs } from "@/components/wishlist-queue-tabs";
 import { ViewAsMemberToggle } from "@/components/view-as-member-toggle";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { getSessionUser } from "@/lib/guards";
-import { requireGearRatingForRegistrationRound } from "@/lib/phase";
+import { requireGearRatingForRegistrationRound, redirectIfWishlistConfirmedForRound } from "@/lib/phase";
 import { isViewAsMember } from "@/lib/view-as-member";
 import {
   getActivePenaltyForUser,
@@ -14,6 +14,7 @@ import {
   listWishlistRoundItems,
 } from "@/lib/queries";
 import { hasGearQueueSlotUsed } from "@/lib/gear-queue-limit";
+import { canConfirmWishlist } from "@/lib/wishlist-completion";
 import { getTranslations, localized } from "@/lib/i18n/server";
 import { itemAllowsQuantity, wishlistTypeRules } from "@/lib/policy";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
@@ -23,6 +24,7 @@ export default async function WishlistPage() {
   if (!user) redirect("/login");
 
   await requireGearRatingForRegistrationRound();
+  await redirectIfWishlistConfirmedForRound();
 
   const viewAsMember = user.isSystemAdmin && (await isViewAsMember());
   const { t, locale } = await getTranslations();
@@ -40,10 +42,11 @@ export default async function WishlistPage() {
     );
   }
 
-  const [roundItems, penalty, gearLimitUsed] = await Promise.all([
+  const [roundItems, penalty, gearLimitUsed, confirmCheck] = await Promise.all([
     listWishlistRoundItems(round.id, user.id),
     getActivePenaltyForUser(user.id),
     hasGearQueueSlotUsed(user.id, round.id),
+    canConfirmWishlist(user.id, round.id),
   ]);
 
   const hasGearQueueItems = roundItems.some((item) =>
@@ -140,6 +143,7 @@ export default async function WishlistPage() {
           eventId={round.id}
           items={cards}
           gearStepComplete={gearStepComplete}
+          canConfirm={confirmCheck.ok}
         />
       )}
     </>

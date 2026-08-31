@@ -96,6 +96,11 @@ export const users = pgTable("user", {
     () => events.id,
     { onDelete: "set null" },
   ),
+  /** Set when the member confirms their wishlist for a specific open round. */
+  wishlistConfirmedEventId: uuid("wishlist_confirmed_event_id").references(
+    () => events.id,
+    { onDelete: "set null" },
+  ),
   isActive: boolean("is_active").notNull().default(true),
   /** Latest Discord guild role IDs, refreshed on sign-in or member sync. */
   discordRoleIds: text("discord_role_ids").array(),

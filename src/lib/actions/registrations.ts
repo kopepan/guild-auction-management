@@ -3,7 +3,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
-import { allocations, registrations } from "@/db/schema";
+import { allocations, registrations, users } from "@/db/schema";
 import { assertUser } from "@/lib/guards";
 import {
   failure,
@@ -17,12 +17,17 @@ import {
   registerForWishlist,
   withdrawFromWishlist,
 } from "@/lib/wishlist-register";
-import { getWishlistQueueEntries } from "@/lib/queries";
+import { getWishlistQueueEntries, getRegistrationRound } from "@/lib/queries";
+import {
+  canConfirmWishlist,
+  memberHasConfirmedWishlist,
+} from "@/lib/wishlist-completion";
 import { revalidatePath } from "next/cache";
 
 function revalidateWishlistPages(eventId: string) {
   revalidatePath("/");
   revalidatePath("/wishlist");
+  revalidatePath("/wishlist/complete");
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/admin/events/${eventId}`);
 }
@@ -129,4 +134,58 @@ export async function fetchWishlistQueueEntriesAction(input: {
     input.queueType,
     user.id,
   );
+}
+
+export async function confirmWishlistAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await assertUser();
+    const eventId = String(formData.get("eventId") ?? "");
+    if (!eventId) return failure("error.notFound");
+
+    const round = await getRegistrationRound();
+    if (!round || round.id !== eventId) return failure("error.notFound");
+
+    const check = await canConfirmWishlist(user.id, eventId);
+    if (!check.ok) return failure(check.message);
+
+    await db
+      .update(users)
+      .set({
+        wishlistConfirmedEventId: eventId,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    revalidateWishlistPages(eventId);
+    return success("wishlist.confirmed");
+  });
+}
+
+export async function editWishlistAction(
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await assertUser();
+    const round = await getRegistrationRound();
+    if (!round) return failure("error.notFound");
+
+    if (!(await memberHasConfirmedWishlist(user.id, round.id))) {
+      return failure("error.notFound");
+    }
+
+    await db
+      .update(users)
+      .set({
+        wishlistConfirmedEventId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    revalidateWishlistPages(round.id);
+    return success("wishlist.editUnlocked");
+  });
 }

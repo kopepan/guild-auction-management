@@ -120,6 +120,25 @@ const en = {
   "wishlist.step.randomQueueUnlocked":
     "Gear Rating queue done — continue with random queue items below.",
   "wishlist.confirmSubmit": "Confirm",
+  "wishlist.readyToConfirm": "Ready to finish registration?",
+  "wishlist.readyToConfirmHint":
+    "When you have queued everything you want this round, confirm to lock in your entries.",
+  "wishlist.confirmFinish": "Confirm registration",
+  "wishlist.confirmFinishPrompt":
+    "Confirm your registrations for this round? You can still edit them later if needed.",
+  "wishlist.confirming": "Confirming...",
+  "wishlist.confirmed": "Registration confirmed.",
+  "wishlist.alreadyConfirmed": "You have already confirmed this round.",
+  "wishlist.confirmNeedsEntry":
+    "Register for at least one item before confirming.",
+  "wishlist.editUnlocked": "You can edit your entries again.",
+  "wishlist.editEntries": "Edit entries",
+  "wishlist.completeTitle": "Registration complete",
+  "wishlist.completeSubtitle":
+    "Your queue entries for this round are confirmed.",
+  "wishlist.completeHeading": "All done for this round",
+  "wishlist.completeBody":
+    "Watch Discord for draw results. If you need to change your entries before the round closes, use Edit entries below.",
   "wishlist.confirmRegister": "Queue for {item}?",
   "wishlist.confirmRegisterQuantity": "Queue for {item} ×{quantity}?",
   "wishlist.confirmWithdraw": "Confirm withdraw",
@@ -567,6 +586,23 @@ const th: Record<TranslationKey, string> = {
   "wishlist.step.randomQueueUnlocked":
     "ลงคิวตาม Gear Rating แล้ว — ต่อด้วยคิวแบบสุ่มได้เลย",
   "wishlist.confirmSubmit": "ยืนยัน",
+  "wishlist.readyToConfirm": "ลงคิวครบแล้วหรือยัง?",
+  "wishlist.readyToConfirmHint":
+    "เมื่อลงคิวครบตามที่ต้องการแล้ว กดยืนยันเพื่อสรุปการลงทะเบียนรอบนี้",
+  "wishlist.confirmFinish": "ยืนยันการลงคิว",
+  "wishlist.confirmFinishPrompt":
+    "ยืนยันการลงคิวรอบนี้? ยังสามารถกลับมาแก้ไขได้ภายหลัง",
+  "wishlist.confirming": "กำลังยืนยัน...",
+  "wishlist.confirmed": "ยืนยันการลงคิวแล้ว",
+  "wishlist.alreadyConfirmed": "คุณยืนยันรอบนี้แล้ว",
+  "wishlist.confirmNeedsEntry": "ต้องลงคิวอย่างน้อย 1 รายการก่อนยืนยัน",
+  "wishlist.editUnlocked": "สามารถแก้ไขรายการได้อีกครั้ง",
+  "wishlist.editEntries": "แก้ไขรายการ",
+  "wishlist.completeTitle": "ลงคิวเสร็จสิ้น",
+  "wishlist.completeSubtitle": "ยืนยันการลงคิวรอบนี้เรียบร้อยแล้ว",
+  "wishlist.completeHeading": "ลงคิวครบแล้ว",
+  "wishlist.completeBody":
+    "ติดตามผลการจัดคิวได้ใน Discord หากต้องการเปลี่ยนรายการก่อนปิดรอบ กดแก้ไขรายการด้านล่าง",
   "wishlist.confirmRegister": "ลงคิว {item}?",
   "wishlist.confirmRegisterQuantity": "ลงคิว {item} ×{quantity}?",
   "wishlist.confirmWithdraw": "ยืนยันยกเลิก",

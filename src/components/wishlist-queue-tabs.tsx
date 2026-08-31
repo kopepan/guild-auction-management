@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
+import { WishlistConfirmBar } from "@/components/wishlist-confirm-bar";
 import {
   WishlistItemCard,
   type WishlistCardItem,
@@ -21,10 +22,12 @@ export function WishlistQueueTabs({
   eventId,
   items,
   gearStepComplete,
+  canConfirm,
 }: {
   eventId: string;
   items: WishlistCardItem[];
   gearStepComplete: boolean;
+  canConfirm: boolean;
 }) {
   const t = useT();
   const availableTypes = QUEUE_DRAW_ORDER.filter((type) =>
@@ -142,6 +145,8 @@ export function WishlistQueueTabs({
           ))}
         </ul>
       )}
+
+      {canConfirm ? <WishlistConfirmBar eventId={eventId} /> : null}
     </div>
   );
 }

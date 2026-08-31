@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getSessionUser, type SessionUser } from "@/lib/guards";
 import { getRegistrationRound } from "@/lib/queries";
+import { memberHasConfirmedWishlist } from "@/lib/wishlist-completion";
 import { actsAsMember, isViewAsMember } from "@/lib/view-as-member";
 
 const REGISTRATION_MEMBER_PATHS = [
@@ -39,19 +40,24 @@ export async function memberHasGearRatingForRound(
   );
 }
 
-/** Member landing page while registration is open (GR first, then wishlist). */
+/** Member landing page while registration is open (GR → wishlist → complete). */
 export async function getRegistrationEntryPath(
   user: Pick<
     SessionUser,
     "id" | "gearRating" | "gearRatingSubmittedEventId"
   >,
-): Promise<"/register/gear-rating" | "/wishlist"> {
+): Promise<"/register/gear-rating" | "/wishlist" | "/wishlist/complete"> {
   const round = await getRegistrationRound();
   if (!round) return "/wishlist";
 
-  const complete =
+  const grComplete =
     user.gearRating != null && user.gearRatingSubmittedEventId === round.id;
-  return complete ? "/wishlist" : "/register/gear-rating";
+  if (!grComplete) return "/register/gear-rating";
+
+  if (await memberHasConfirmedWishlist(user.id, round.id)) {
+    return "/wishlist/complete";
+  }
+  return "/wishlist";
 }
 
 /**
@@ -105,7 +111,7 @@ export async function redirectIfGearRatingCompleteForRound() {
   const complete =
     actor.user.gearRating != null &&
     actor.user.gearRatingSubmittedEventId === round.id;
-  if (complete) redirect("/wishlist");
+  if (complete) redirect(await getRegistrationEntryPath(actor.user));
 }
 
 /** Full profile is hidden during registration; send members to GR or wishlist. */
@@ -119,7 +125,34 @@ export async function redirectProfileDuringRegistration() {
   const complete =
     actor.user.gearRating != null &&
     actor.user.gearRatingSubmittedEventId === round.id;
-  redirect(complete ? "/wishlist" : "/register/gear-rating");
+  redirect(await getRegistrationEntryPath(actor.user));
+}
+
+/** Wishlist page: skip if already confirmed for the open round. */
+export async function redirectIfWishlistConfirmedForRound() {
+  const actor = await getRegistrationActor();
+  if (!actor?.actsAsMember) return;
+
+  const round = await getRegistrationRound();
+  if (!round) return;
+
+  if (await memberHasConfirmedWishlist(actor.user.id, round.id)) {
+    redirect("/wishlist/complete");
+  }
+}
+
+/** Completion page: require confirmation for the open round. */
+export async function requireWishlistConfirmedForRound() {
+  const actor = await getRegistrationActor();
+  if (!actor) redirect("/login");
+  if (!actor.actsAsMember) redirect("/wishlist");
+
+  const round = await getRegistrationRound();
+  if (!round) redirect("/wishlist");
+
+  if (!(await memberHasConfirmedWishlist(actor.user.id, round.id))) {
+    redirect("/wishlist");
+  }
 }
 
 export function isRegistrationMemberPath(pathname: string): boolean {
