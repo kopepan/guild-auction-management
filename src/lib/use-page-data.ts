@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type PageState<T> =
   | { status: "loading" }
@@ -9,13 +9,30 @@ type PageState<T> =
   | { status: "notFound" }
   | { status: "ready"; data: T };
 
-export function usePageData<T>(path: string) {
+export type UsePageDataResult<T> = PageState<T> & {
+  reload: () => void;
+};
+
+export function usePageData<T>(path: string): UsePageDataResult<T> {
   const router = useRouter();
   const [state, setState] = useState<PageState<T>>({ status: "loading" });
+  const [version, setVersion] = useState(0);
+  const pathRef = useRef(path);
+
+  const reload = useCallback(() => {
+    setVersion((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    setState({ status: "loading" });
+    const pathChanged = pathRef.current !== path;
+    pathRef.current = path;
+
+    setState((prev) =>
+      pathChanged || prev.status !== "ready"
+        ? { status: "loading" }
+        : prev,
+    );
 
     fetch(`/api/data/page?path=${encodeURIComponent(path)}`, {
       credentials: "same-origin",
@@ -46,7 +63,7 @@ export function usePageData<T>(path: string) {
     return () => {
       cancelled = true;
     };
-  }, [path, router]);
+  }, [path, router, version]);
 
-  return state;
+  return { ...state, reload };
 }

@@ -20,8 +20,8 @@ export function WishlistConfirmBar({ eventId }: { eventId: string }) {
   }, [state, router]);
 
   return (
-    <section className="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/8 p-4">
-      <div className="flex flex-wrap items-start gap-3">
+    <section className="fixed inset-x-0 bottom-0 z-30 border-t border-emerald-400/30 bg-night-950/95 p-4 shadow-[0_-12px_40px_rgba(2,8,23,0.65)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-start gap-3">
         <CheckCircle2
           className="mt-0.5 size-5 shrink-0 text-emerald-300"
           aria-hidden
@@ -45,7 +45,9 @@ export function WishlistConfirmBar({ eventId }: { eventId: string }) {
           </SubmitButton>
         </form>
       </div>
-      <ActionMessage state={state} />
+      <div className="mx-auto max-w-6xl">
+        <ActionMessage state={state} />
+      </div>
     </section>
   );
 }

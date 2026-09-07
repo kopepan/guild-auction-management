@@ -23,11 +23,13 @@ export function WishlistQueueTabs({
   items,
   gearStepComplete,
   canConfirm,
+  onChanged,
 }: {
   eventId: string;
   items: WishlistCardItem[];
   gearStepComplete: boolean;
   canConfirm: boolean;
+  onChanged?: () => void;
 }) {
   const t = useT();
   const availableTypes = QUEUE_DRAW_ORDER.filter((type) =>
@@ -66,13 +68,12 @@ export function WishlistQueueTabs({
 
   const currentStep = gearStepComplete ? "random_queue" : "gear_queue";
   const hasRegistrations = items.some((item) => item.registration);
-  const allStepsComplete = gearStepComplete && hasRegistrations;
 
   return (
-    <div>
+    <div className={canConfirm ? "pb-28" : undefined}>
       <RegistrationSteps
-        current={allStepsComplete ? "random_queue" : currentStep}
-        allComplete={allStepsComplete}
+        current={currentStep}
+        allComplete={canConfirm}
       />
 
       {hasRegistrations ? <WishlistMyEntries items={items} /> : null}
@@ -87,6 +88,12 @@ export function WishlistQueueTabs({
         <p className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
           <ArrowRight className="size-4 shrink-0" aria-hidden />
           {t("wishlist.step.randomQueueUnlocked")}
+        </p>
+      ) : null}
+
+      {canConfirm ? (
+        <p className="mb-4 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+          {t("wishlist.readyToConfirmHint")}
         </p>
       ) : null}
 
@@ -141,6 +148,7 @@ export function WishlistQueueTabs({
               key={`${item.itemId}:${item.wishlistType}`}
               eventId={eventId}
               item={item}
+              onChanged={onChanged}
             />
           ))}
         </ul>

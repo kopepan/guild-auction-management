@@ -115,6 +115,7 @@ export default function WishlistClient() {
           items={cards}
           gearStepComplete={gearStepComplete ?? false}
           canConfirm={confirmCheck?.ok ?? false}
+          onChanged={state.reload}
         />
       )}
     </>

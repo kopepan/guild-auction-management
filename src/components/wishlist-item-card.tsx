@@ -53,9 +53,11 @@ export type WishlistCardItem = {
 export function WishlistItemCard({
   item,
   eventId,
+  onChanged,
 }: {
   item: WishlistCardItem;
   eventId: string;
+  onChanged?: () => void;
 }) {
   const t = useT();
   const [registerState, register] = useActionState(registerAction, idleState);
@@ -66,6 +68,8 @@ export function WishlistItemCard({
   const [queueEntries, setQueueEntries] = useState(item.queueEntries);
   const [loadingQueue, setLoadingQueue] = useState(false);
   const queueLoadedRef = useRef(item.queueEntries.length > 0);
+  const lastHandledRegister = useRef(registerState);
+  const lastHandledWithdraw = useRef(withdrawState);
 
   const entry = item.registration;
   const state = entry ? withdrawState : registerState;
@@ -90,11 +94,32 @@ export function WishlistItemCard({
   }
 
   useEffect(() => {
+    setQueueEntries(item.queueEntries);
+    queueLoadedRef.current = item.queueEntries.length > 0;
+  }, [item.queueEntries]);
+
+  useEffect(() => {
     if (entry) {
       void loadQueueEntries();
     }
     // Load queue details when the member already registered (details open by default).
   }, [entry, eventId, item.itemId, item.wishlistType]);
+
+  useEffect(() => {
+    if (registerState === lastHandledRegister.current) return;
+    lastHandledRegister.current = registerState;
+    if (registerState.status !== "success") return;
+    setConfirmingRegister(false);
+    onChanged?.();
+  }, [registerState, onChanged]);
+
+  useEffect(() => {
+    if (withdrawState === lastHandledWithdraw.current) return;
+    lastHandledWithdraw.current = withdrawState;
+    if (withdrawState.status !== "success") return;
+    setConfirmingWithdraw(false);
+    onChanged?.();
+  }, [withdrawState, onChanged]);
 
   function handleQueueDetailsToggle(event: React.SyntheticEvent<HTMLDetailsElement>) {
     if (event.currentTarget.open) {
