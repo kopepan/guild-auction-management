@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Check } from "lucide-react";
 
 import { useT } from "@/lib/i18n/client";
@@ -20,9 +21,12 @@ function stepIndex(step: RegistrationStep) {
 export function RegistrationSteps({
   current,
   allComplete = false,
+  hrefs,
 }: {
   current: RegistrationStep;
   allComplete?: boolean;
+  /** When set, completed/current steps become links so members can go back. */
+  hrefs?: Partial<Record<RegistrationStep, string>>;
 }) {
   const t = useT();
   const currentIndex = allComplete ? STEPS.length : stepIndex(current);
@@ -32,6 +36,37 @@ export function RegistrationSteps({
       {STEPS.map((step, index) => {
         const done = index < currentIndex || allComplete;
         const active = !allComplete && index === currentIndex;
+        const href = hrefs?.[step.id];
+        const clickable = Boolean(href);
+
+        const classes = `inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+          active
+            ? "border-moon-500/50 bg-moon-600/20 text-moon-300"
+            : done
+              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+              : "border-white/10 bg-white/3 text-white/40"
+        } ${
+          clickable
+            ? "cursor-pointer hover:border-moon-400/60 hover:bg-moon-600/25 hover:text-moon-100"
+            : ""
+        }`;
+
+        const content = (
+          <>
+            <span
+              className={`grid size-5 place-items-center rounded-full text-[10px] ${
+                active
+                  ? "bg-moon-500 text-white"
+                  : done
+                    ? "bg-emerald-500/25 text-emerald-200"
+                    : "bg-white/10 text-white/45"
+              }`}
+            >
+              {done ? <Check className="size-3" aria-hidden /> : index + 1}
+            </span>
+            {t(step.labelKey)}
+          </>
+        );
 
         return (
           <li key={step.id} className="flex items-center">
@@ -43,28 +78,19 @@ export function RegistrationSteps({
                 aria-hidden
               />
             ) : null}
-            <span
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
-                active
-                  ? "border-moon-500/50 bg-moon-600/20 text-moon-300"
-                  : done
-                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
-                    : "border-white/10 bg-white/3 text-white/40"
-              }`}
-            >
-              <span
-                className={`grid size-5 place-items-center rounded-full text-[10px] ${
-                  active
-                    ? "bg-moon-500 text-white"
-                    : done
-                      ? "bg-emerald-500/25 text-emerald-200"
-                      : "bg-white/10 text-white/45"
-                }`}
+            {clickable && href ? (
+              <Link
+                href={href}
+                className={classes}
+                aria-current={active ? "step" : undefined}
               >
-                {done ? <Check className="size-3" aria-hidden /> : index + 1}
+                {content}
+              </Link>
+            ) : (
+              <span className={classes} aria-current={active ? "step" : undefined}>
+                {content}
               </span>
-              {t(step.labelKey)}
-            </span>
+            )}
           </li>
         );
       })}

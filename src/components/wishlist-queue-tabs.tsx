@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
 import { WishlistConfirmBar } from "@/components/wishlist-confirm-bar";
@@ -8,15 +9,40 @@ import {
   WishlistItemCard,
   type WishlistCardItem,
 } from "@/components/wishlist-item-card";
-import { RegistrationSteps } from "@/components/registration-steps";
+import {
+  RegistrationSteps,
+  type RegistrationStep,
+} from "@/components/registration-steps";
 import { WishlistMyEntries } from "@/components/wishlist-my-entries";
 import { EmptyState } from "@/components/ui";
 import { useT } from "@/lib/i18n/client";
-import type { TranslationKey } from "@/lib/i18n/dictionaries";
 import {
   QUEUE_DRAW_ORDER,
   type WishlistType,
 } from "@/lib/policy";
+
+function resolveActiveQueue(
+  requested: string | null,
+  gearStepComplete: boolean,
+  availableTypes: WishlistType[],
+): WishlistType {
+  const hasGear = availableTypes.includes("gear_queue");
+  const hasRandom = availableTypes.includes("random_queue");
+
+  if (
+    requested === "gear_queue" &&
+    hasGear
+  ) {
+    return "gear_queue";
+  }
+  if (requested === "random_queue" && hasRandom && gearStepComplete) {
+    return "random_queue";
+  }
+
+  if (!gearStepComplete && hasGear) return "gear_queue";
+  if (hasRandom) return "random_queue";
+  return availableTypes[0] ?? "gear_queue";
+}
 
 export function WishlistQueueTabs({
   eventId,
@@ -32,48 +58,55 @@ export function WishlistQueueTabs({
   onChanged?: () => void;
 }) {
   const t = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const availableTypes = QUEUE_DRAW_ORDER.filter((type) =>
     items.some((item) => item.wishlistType === type),
   );
   const hasGearQueue = availableTypes.includes("gear_queue");
   const hasRandomQueue = availableTypes.includes("random_queue");
 
-  const unlockedTypes = gearStepComplete
-    ? availableTypes
-    : availableTypes.filter((type) => type === "gear_queue");
-
-  const defaultTab: WishlistType = gearStepComplete
-    ? hasRandomQueue
-      ? "random_queue"
-      : (unlockedTypes[0] ?? "gear_queue")
-    : "gear_queue";
-
-  const [activeType, setActiveType] = useState<WishlistType>(defaultTab);
-
-  useEffect(() => {
-    if (gearStepComplete && activeType === "gear_queue" && hasRandomQueue) {
-      setActiveType("random_queue");
-    }
-  }, [gearStepComplete, activeType, hasRandomQueue]);
-
-  useEffect(() => {
-    if (!unlockedTypes.includes(activeType)) {
-      setActiveType(unlockedTypes[0] ?? "gear_queue");
-    }
-  }, [activeType, unlockedTypes]);
+  const activeType = resolveActiveQueue(
+    searchParams.get("queue"),
+    gearStepComplete,
+    availableTypes,
+  );
 
   const visibleItems = items.filter(
     (item) => item.wishlistType === activeType,
   );
 
-  const currentStep = gearStepComplete ? "random_queue" : "gear_queue";
+  const currentStep: RegistrationStep =
+    activeType === "gear_queue" ? "gear_queue" : "random_queue";
   const hasRegistrations = items.some((item) => item.registration);
 
+  const stepHrefs = useMemo(() => {
+    const hrefs: Partial<Record<RegistrationStep, string>> = {
+      gr: "/register/gear-rating",
+    };
+    if (hasGearQueue) {
+      hrefs.gear_queue = `${pathname}?queue=gear_queue`;
+    }
+    if (hasRandomQueue && gearStepComplete) {
+      hrefs.random_queue = `${pathname}?queue=random_queue`;
+    }
+    return hrefs;
+  }, [pathname, hasGearQueue, hasRandomQueue, gearStepComplete]);
+
+  function goToQueue(queue: WishlistType) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("queue", queue);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   return (
-    <div className={canConfirm ? "pb-28" : undefined}>
+    <div className={canConfirm ? "pb-36" : undefined}>
       <RegistrationSteps
-        current={currentStep}
+        current={canConfirm ? "random_queue" : currentStep}
         allComplete={canConfirm}
+        hrefs={stepHrefs}
       />
 
       {hasRegistrations ? <WishlistMyEntries items={items} /> : null}
@@ -84,10 +117,16 @@ export function WishlistQueueTabs({
         </p>
       ) : null}
 
-      {gearStepComplete && hasRandomQueue ? (
+      {gearStepComplete && activeType === "random_queue" && hasRandomQueue ? (
         <p className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
           <ArrowRight className="size-4 shrink-0" aria-hidden />
           {t("wishlist.step.randomQueueUnlocked")}
+        </p>
+      ) : null}
+
+      {gearStepComplete && activeType === "gear_queue" ? (
+        <p className="mb-4 rounded-xl border border-moon-500/25 bg-moon-600/10 px-4 py-3 text-sm text-moon-200">
+          {t("wishlist.step.editingGearQueue")}
         </p>
       ) : null}
 
@@ -97,52 +136,18 @@ export function WishlistQueueTabs({
         </p>
       ) : null}
 
-      <div
-        className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-sky-300/10 bg-night-900/65 p-1.5"
-        role="tablist"
-        aria-label={t("wishlist.queueTabs")}
-      >
-        {availableTypes.map((type) => {
-          const unlocked = unlockedTypes.includes(type);
-          const active = type === activeType;
-          const count = items.filter(
-            (item) => item.wishlistType === type,
-          ).length;
-
-          return (
-            <button
-              key={type}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              aria-disabled={!unlocked}
-              disabled={!unlocked}
-              onClick={() => unlocked && setActiveType(type)}
-              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                !unlocked
-                  ? "cursor-not-allowed text-white/25"
-                  : active
-                    ? "bg-moon-600 text-white shadow-lg shadow-moon-700/25"
-                    : "text-sky-100/55 hover:bg-sky-300/8 hover:text-sky-100"
-              }`}
-            >
-              {t(`wishlistType.${type}` as TranslationKey)}
-              <span
-                className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] ${
-                  active ? "bg-white/15 text-white" : "bg-white/5 text-white/40"
-                }`}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <h2 className="mb-4 text-sm font-semibold text-white">
+        {t(
+          activeType === "gear_queue"
+            ? "wishlist.step.gearQueue"
+            : "wishlist.step.randomQueue",
+        )}
+      </h2>
 
       {visibleItems.length === 0 ? (
         <EmptyState>{t("events.noItems")}</EmptyState>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2" role="tabpanel">
+        <ul className="grid gap-3 sm:grid-cols-2">
           {visibleItems.map((item) => (
             <WishlistItemCard
               key={`${item.itemId}:${item.wishlistType}`}

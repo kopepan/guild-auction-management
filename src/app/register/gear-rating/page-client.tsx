@@ -9,6 +9,9 @@ import { usePageData } from "@/lib/use-page-data";
 
 type RegisterGearRatingData = {
   round: { id: string };
+  gearRating: number | null;
+  alreadySubmitted: boolean;
+  gearStepComplete: boolean;
 };
 
 export default function RegisterGearRatingClient() {
@@ -22,20 +25,45 @@ export default function RegisterGearRatingClient() {
     return null;
   }
 
+  const { gearRating, alreadySubmitted, gearStepComplete } = state.data;
+
   return (
     <>
       <PageHeader
         title={t("registerGearRating.title")}
-        subtitle={t("registerGearRating.subtitle")}
+        subtitle={
+          alreadySubmitted
+            ? t("registerGearRating.editSubtitle")
+            : t("registerGearRating.subtitle")
+        }
       />
-      <RegistrationSteps current="gr" />
+      <RegistrationSteps
+        current="gr"
+        hrefs={
+          alreadySubmitted
+            ? {
+                gr: "/register/gear-rating",
+                gear_queue: "/wishlist?queue=gear_queue",
+                ...(gearStepComplete
+                  ? { random_queue: "/wishlist?queue=random_queue" }
+                  : {}),
+              }
+            : undefined
+        }
+      />
       <div className="mx-auto max-w-md">
         <Card>
           <ProfileForm
-            blankDefault
+            blankDefault={!alreadySubmitted}
+            requireConfirm
+            forRegistrationRound
             hintKey="registerGearRating.hint"
-            submitLabelKey="registerGearRating.submit"
-            gearRating={null}
+            submitLabelKey={
+              alreadySubmitted
+                ? "registerGearRating.update"
+                : "registerGearRating.submit"
+            }
+            gearRating={gearRating}
           />
         </Card>
       </div>

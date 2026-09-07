@@ -11,22 +11,31 @@ import { useT } from "@/lib/i18n/client";
 export function ProfileForm({
   gearRating,
   blankDefault = false,
+  requireConfirm = false,
+  forRegistrationRound = false,
   hintKey = "profile.gearRatingHint",
   submitLabelKey = "common.save",
 }: {
   gearRating: number | null;
   blankDefault?: boolean;
+  requireConfirm?: boolean;
+  forRegistrationRound?: boolean;
   hintKey?: "profile.gearRatingHint" | "registerGearRating.hint";
-  submitLabelKey?: "common.save" | "registerGearRating.submit";
+  submitLabelKey?:
+    | "common.save"
+    | "registerGearRating.submit"
+    | "registerGearRating.update";
 }) {
   const t = useT();
   const [state, formAction] = useActionState(updateProfileAction, idleState);
   const defaultValue = blankDefault ? "" : (gearRating ?? "");
-  const [gearRatingInput, setGearRatingInput] = useState(defaultValue);
+  const [gearRatingInput, setGearRatingInput] = useState(String(defaultValue));
   const [confirming, setConfirming] = useState(false);
+  const confirmBeforeSubmit = blankDefault || requireConfirm;
+  const markRegistrationRound = blankDefault || forRegistrationRound;
 
   function handlePrepareSubmit(event: React.FormEvent) {
-    if (!blankDefault || confirming) return;
+    if (!confirmBeforeSubmit || confirming) return;
     event.preventDefault();
     setConfirming(true);
   }
@@ -37,7 +46,7 @@ export function ProfileForm({
       onSubmit={handlePrepareSubmit}
       className="space-y-4"
     >
-      {blankDefault ? (
+      {markRegistrationRound ? (
         <input type="hidden" name="forRegistrationRound" value="1" />
       ) : null}
       <div>
@@ -66,7 +75,7 @@ export function ProfileForm({
 
       <ActionMessage state={state} />
 
-      {blankDefault && confirming ? (
+      {confirmBeforeSubmit && confirming ? (
         <div className="space-y-3 rounded-lg border border-moon-500/30 bg-moon-600/10 px-3 py-3">
           <p className="text-sm text-moon-100">
             {t("registerGearRating.confirm", {
@@ -81,7 +90,10 @@ export function ProfileForm({
             >
               {t("common.cancel")}
             </button>
-            <SubmitButton pendingLabel={t("common.saving")} className="btn-primary btn-sm">
+            <SubmitButton
+              pendingLabel={t("common.saving")}
+              className="btn-primary btn-sm"
+            >
               {t("wishlist.confirmSubmit")}
             </SubmitButton>
           </div>

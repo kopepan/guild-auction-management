@@ -20,24 +20,29 @@ export function WishlistConfirmBar({ eventId }: { eventId: string }) {
   }, [state, router]);
 
   return (
-    <section className="fixed inset-x-0 bottom-0 z-30 border-t border-emerald-400/30 bg-night-950/95 p-4 shadow-[0_-12px_40px_rgba(2,8,23,0.65)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-start gap-3">
-        <CheckCircle2
-          className="mt-0.5 size-5 shrink-0 text-emerald-300"
-          aria-hidden
-        />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-emerald-100">
-            {t("wishlist.readyToConfirm")}
-          </p>
-          <p className="mt-1 text-xs text-emerald-200/70">
-            {t("wishlist.readyToConfirmHint")}
-          </p>
+    <section className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-emerald-300/60 bg-linear-to-t from-emerald-950 via-emerald-900/95 to-night-950/98 px-4 py-4 shadow-[0_-20px_60px_rgba(16,185,129,0.35)] backdrop-blur-xl sm:py-5">
+      <div
+        className="pointer-events-none absolute inset-x-0 -top-px h-px bg-linear-to-r from-transparent via-emerald-300 to-transparent"
+        aria-hidden
+      />
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-emerald-400 text-night-950 shadow-[0_0_24px_rgba(52,211,153,0.55)]">
+            <CheckCircle2 className="size-6" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-semibold tracking-tight text-white sm:text-lg">
+              {t("wishlist.readyToConfirm")}
+            </p>
+            <p className="mt-0.5 text-sm text-emerald-100/85">
+              {t("wishlist.readyToConfirmHint")}
+            </p>
+          </div>
         </div>
-        <form action={formAction}>
+        <form action={formAction} className="w-full shrink-0 sm:w-auto">
           <input type="hidden" name="eventId" value={eventId} />
           <SubmitButton
-            className="btn-primary"
+            className="btn w-full bg-emerald-400 px-6 py-3 text-base font-semibold text-night-950 shadow-[0_0_28px_rgba(52,211,153,0.45)] hover:bg-emerald-300 focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:outline-none sm:w-auto"
             confirm={t("wishlist.confirmFinishPrompt")}
             pendingLabel={t("wishlist.confirming")}
           >

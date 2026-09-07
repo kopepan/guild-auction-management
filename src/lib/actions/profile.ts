@@ -1,11 +1,11 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { registrations, users } from "@/db/schema";
 import { assertUser } from "@/lib/guards";
 import {
   failure,
@@ -47,10 +47,12 @@ export async function updateProfileAction(
       return failure("error.registrationClosed");
     }
 
+    const nextGearRating = Math.round(gearRating);
+
     await db
       .update(users)
       .set({
-        gearRating: Math.round(gearRating),
+        gearRating: nextGearRating,
         ...(forRegistrationRound && round
           ? { gearRatingSubmittedEventId: round.id }
           : {}),
@@ -58,13 +60,26 @@ export async function updateProfileAction(
       })
       .where(eq(users.id, user.id));
 
+    if (forRegistrationRound && round) {
+      await db
+        .update(registrations)
+        .set({ gearRatingSnapshot: nextGearRating })
+        .where(
+          and(
+            eq(registrations.userId, user.id),
+            eq(registrations.eventId, round.id),
+            eq(registrations.status, "pending"),
+          ),
+        );
+    }
+
     revalidatePath("/profile");
     revalidatePath("/");
     revalidatePath("/wishlist");
     revalidatePath("/register/gear-rating");
     revalidatePath("/admin/members");
 
-    if (forRegistrationRound && round) redirect("/wishlist");
+    if (forRegistrationRound && round) redirect("/wishlist?queue=gear_queue");
 
     return success("profile.saved");
   });

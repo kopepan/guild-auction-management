@@ -6,7 +6,6 @@ import { localized } from "@/lib/i18n/localized";
 import {
   adminRootRedirect,
   auctionRegisterRedirect,
-  gearRatingCompleteRedirect,
   gearRatingRequiredRedirect,
   loginRedirect,
   profileRegistrationRedirect,
@@ -21,10 +20,15 @@ import {
   redirectTo,
   type PageLoaderResult,
 } from "@/lib/page-loaders/types";
+import { memberHasGearRatingForRound } from "@/lib/phase";
 import { buildWishlistCards } from "@/lib/wishlist-cards";
-import { canConfirmWishlist } from "@/lib/wishlist-completion";
+import {
+  canConfirmWishlist,
+  memberHasConfirmedWishlist,
+} from "@/lib/wishlist-completion";
 import { hasGearQueueSlotUsed } from "@/lib/gear-queue-limit";
 import { itemAllowsQuantity } from "@/lib/policy";
+import { actsAsMember, isViewAsMember } from "@/lib/view-as-member";
 import {
   ensureRoundHasActiveCatalogue,
   getActivePenaltyForUser,
@@ -271,13 +275,30 @@ export async function loadWishlistComplete(): Promise<PageLoaderResult<unknown>>
 }
 
 export async function loadRegisterGearRating(): Promise<PageLoaderResult<unknown>> {
-  const completeRedirect = await gearRatingCompleteRedirect();
-  if (completeRedirect) return redirectTo(completeRedirect);
+  const loginRedirectPath = await requireUserRedirect();
+  if (loginRedirectPath) return redirectTo(loginRedirectPath);
+
+  const user = await getSessionUser();
+  if (!user) return redirectTo("/login");
+
+  const viewAsMember = user.isSystemAdmin && (await isViewAsMember());
+  if (!actsAsMember({ isSystemAdmin: user.isSystemAdmin, viewAsMember })) {
+    return redirectTo("/wishlist");
+  }
 
   const round = await getRegistrationRound();
   if (!round) return redirectTo("/wishlist");
 
-  return pageData({ round });
+  if (await memberHasConfirmedWishlist(user.id, round.id)) {
+    return redirectTo("/wishlist/complete");
+  }
+
+  return pageData({
+    round,
+    gearRating: user.gearRating,
+    alreadySubmitted: await memberHasGearRatingForRound(user.id, round.id),
+    gearStepComplete: await hasGearQueueSlotUsed(user.id, round.id),
+  });
 }
 
 export async function loadAuctionRegister(): Promise<PageLoaderResult<unknown>> {

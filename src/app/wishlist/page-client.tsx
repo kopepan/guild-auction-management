@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Ban } from "lucide-react";
 
 import type { WishlistCardItem } from "@/components/wishlist-item-card";
@@ -110,13 +111,15 @@ export default function WishlistClient() {
       {!cards || cards.length === 0 ? (
         <EmptyState>{t("events.noItems")}</EmptyState>
       ) : (
-        <WishlistQueueTabs
-          eventId={round.id}
-          items={cards}
-          gearStepComplete={gearStepComplete ?? false}
-          canConfirm={confirmCheck?.ok ?? false}
-          onChanged={state.reload}
-        />
+        <Suspense fallback={<PageLoader />}>
+          <WishlistQueueTabs
+            eventId={round.id}
+            items={cards}
+            gearStepComplete={gearStepComplete ?? false}
+            canConfirm={confirmCheck?.ok ?? false}
+            onChanged={state.reload}
+          />
+        </Suspense>
       )}
     </>
   );

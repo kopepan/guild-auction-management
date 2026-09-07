@@ -119,6 +119,8 @@ const en = {
     "Step 2: pick one item in the Gear Rating queue first.",
   "wishlist.step.randomQueueUnlocked":
     "Gear Rating queue done — continue with random queue items below.",
+  "wishlist.step.editingGearQueue":
+    "Editing your Gear Rating queue. Tap Random queue above when you are done.",
   "wishlist.confirmSubmit": "Confirm",
   "wishlist.readyToConfirm": "Ready to finish registration?",
   "wishlist.readyToConfirmHint":
@@ -398,10 +400,13 @@ const en = {
   "registerGearRating.title": "Gear Rating for this round",
   "registerGearRating.subtitle":
     "Submit your current Gear Rating before registering for items this week. You must enter a fresh figure every auction round.",
+  "registerGearRating.editSubtitle":
+    "Update your Gear Rating for this round, then continue with the queues.",
   "registerGearRating.headerHint": "Registration week",
   "registerGearRating.hint":
     "Enter the Gear Rating you are using for this auction round. This must be submitted again each week, even if it has not changed.",
   "registerGearRating.submit": "Submit for this round",
+  "registerGearRating.update": "Update Gear Rating",
   "registerGearRating.confirm":
     "Submit Gear Rating {gearRating} for this round?",
   "adminMembers.title": "Members",
@@ -585,6 +590,8 @@ const th: Record<TranslationKey, string> = {
     "ขั้นที่ 2: เลือกลงคิวตาม Gear Rating 1 ชิ้นก่อน",
   "wishlist.step.randomQueueUnlocked":
     "ลงคิวตาม Gear Rating แล้ว — ต่อด้วยคิวแบบสุ่มได้เลย",
+  "wishlist.step.editingGearQueue":
+    "กำลังแก้ไขคิวตาม Gear Rating เมื่อเสร็จแล้วกดขั้นคิวแบบสุ่มด้านบน",
   "wishlist.confirmSubmit": "ยืนยัน",
   "wishlist.readyToConfirm": "ลงคิวครบแล้วหรือยัง?",
   "wishlist.readyToConfirmHint":
@@ -855,10 +862,13 @@ const th: Record<TranslationKey, string> = {
   "registerGearRating.title": "กรอก Gear Rating รอบนี้",
   "registerGearRating.subtitle":
     "ส่งค่า Gear Rating ปัจจุบันก่อนลงทะเบียนจองไอเทมในรอบนี้ ต้องกรอกใหม่ทุกรอบประมูล",
+  "registerGearRating.editSubtitle":
+    "แก้ไขค่า Gear Rating รอบนี้ แล้วกลับไปลงคิวต่อได้",
   "registerGearRating.headerHint": "สัปดาห์ลงทะเบียน",
   "registerGearRating.hint":
     "ใส่ค่า Gear Rating ที่ใช้ในรอบประมูลนี้ ต้องส่งใหม่ทุกสัปดาห์ แม้ตัวเลขจะเท่าเดิม",
   "registerGearRating.submit": "ส่งค่ารอบนี้",
+  "registerGearRating.update": "อัปเดต Gear Rating",
   "registerGearRating.confirm":
     "ยืนยันส่ง Gear Rating {gearRating} สำหรับรอบนี้?",
 
