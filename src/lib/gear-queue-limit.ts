@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import { registrations } from "@/db/schema";
@@ -22,9 +22,24 @@ const GEAR_SLOT_ACTIVE_STATUSES = [
   "unfilled",
 ] as const;
 
+type GearSlotStatus = (typeof GEAR_SLOT_ACTIVE_STATUSES)[number];
+
 function isGearQueueType(queueType: string): boolean {
   return wishlistTypeRules[normalizeWishlistType(queueType as WishlistType)]
     .countsTowardWeeklyLimit;
+}
+
+function isGearSlotStatus(status: string): status is GearSlotStatus {
+  return (GEAR_SLOT_ACTIVE_STATUSES as readonly string[]).includes(status);
+}
+
+/** Sync check against rows already loaded for the wishlist page. */
+export function gearQueueSlotUsedFromRegistrations(
+  rows: ReadonlyArray<{ queueType: string; status: string }>,
+): boolean {
+  return rows.some(
+    (row) => isGearQueueType(row.queueType) && isGearSlotStatus(row.status),
+  );
 }
 
 /**
@@ -36,7 +51,10 @@ export async function hasGearQueueSlotUsed(
   roundId: string,
 ): Promise<boolean> {
   const rows = await db
-    .select({ queueType: registrations.queueType })
+    .select({
+      queueType: registrations.queueType,
+      status: registrations.status,
+    })
     .from(registrations)
     .where(
       and(
@@ -46,5 +64,5 @@ export async function hasGearQueueSlotUsed(
       ),
     );
 
-  return rows.some((row) => isGearQueueType(row.queueType));
+  return gearQueueSlotUsedFromRegistrations(rows);
 }

@@ -53,12 +53,36 @@ function sortItemsByDisplayOrder<T extends { nameEn: string }>(rows: T[]): T[] {
 }
 
 /** The round members register against: the single open event. */
-export const getRegistrationRound = cache(async () => {
+const ROUND_CACHE_TTL_MS = 15_000;
+let registrationRoundCache: {
+  savedAt: number;
+  value: Awaited<ReturnType<typeof fetchRegistrationRound>>;
+} | null = null;
+
+async function fetchRegistrationRound() {
   return db.query.events.findFirst({
     where: eq(events.status, "open"),
     orderBy: [desc(events.startsOn), desc(events.createdAt)],
   });
+}
+
+export const getRegistrationRound = cache(async () => {
+  const now = Date.now();
+  if (
+    registrationRoundCache &&
+    now - registrationRoundCache.savedAt < ROUND_CACHE_TTL_MS
+  ) {
+    return registrationRoundCache.value;
+  }
+  const value = await fetchRegistrationRound();
+  registrationRoundCache = { savedAt: now, value };
+  return value;
 });
+
+/** Drop cached open-round after create/close/status changes. */
+export function invalidateRegistrationRoundCache() {
+  registrationRoundCache = null;
+}
 
 /** @deprecated Use {@link getRegistrationRound}. */
 export const getCurrentRound = getRegistrationRound;
@@ -340,46 +364,30 @@ export async function listWishlistRoundItems(
   eventId: string,
   userId: string,
 ): Promise<RoundItem[]> {
-  const rows = await db
-    .select({
-      eventItemId: eventItems.id,
-      itemId: items.id,
-      nameEn: items.nameEn,
-      nameTh: items.nameTh,
-      category: items.category,
-      queueTypes: eventItems.queueTypes,
-      maxQuantityPerMember: items.maxQuantityPerMember,
-      minStarstone: items.minStarstone,
-      imageUrl: items.imageUrl,
-      descriptionEn: items.descriptionEn,
-      descriptionTh: items.descriptionTh,
-    })
-    .from(eventItems)
-    .innerJoin(items, eq(items.id, eventItems.itemId))
-    .where(eq(eventItems.eventId, eventId));
-
-  if (rows.length === 0) return [];
-
-  const [countRows, myRegs] = await Promise.all([
+  const [rows, regs] = await Promise.all([
     db
       .select({
-        itemId: registrations.itemId,
-        queueType: registrations.queueType,
-        registrationCount: count(),
+        eventItemId: eventItems.id,
+        itemId: items.id,
+        nameEn: items.nameEn,
+        nameTh: items.nameTh,
+        category: items.category,
+        queueTypes: eventItems.queueTypes,
+        maxQuantityPerMember: items.maxQuantityPerMember,
+        minStarstone: items.minStarstone,
+        imageUrl: items.imageUrl,
+        descriptionEn: items.descriptionEn,
+        descriptionTh: items.descriptionTh,
       })
-      .from(registrations)
-      .where(
-        and(
-          eq(registrations.eventId, eventId),
-          ne(registrations.status, "withdrawn"),
-        ),
-      )
-      .groupBy(registrations.itemId, registrations.queueType),
+      .from(eventItems)
+      .innerJoin(items, eq(items.id, eventItems.itemId))
+      .where(eq(eventItems.eventId, eventId)),
     db
       .select({
         id: registrations.id,
         itemId: registrations.itemId,
         queueType: registrations.queueType,
+        userId: registrations.userId,
         quantityRequested: registrations.quantityRequested,
         status: registrations.status,
         carryDepth: registrations.carryDepth,
@@ -388,18 +396,36 @@ export async function listWishlistRoundItems(
       .where(
         and(
           eq(registrations.eventId, eventId),
-          eq(registrations.userId, userId),
           ne(registrations.status, "withdrawn"),
         ),
       ),
   ]);
 
+  if (rows.length === 0) return [];
+
   const countMap = new Map<string, number>();
-  for (const row of countRows) {
-    countMap.set(
-      queueKey(row.itemId, normalizeWishlistType(row.queueType)),
-      Number(row.registrationCount),
-    );
+  const myRegs: {
+    id: string;
+    itemId: string;
+    queueType: (typeof regs)[number]["queueType"];
+    quantityRequested: number;
+    status: string;
+    carryDepth: number;
+  }[] = [];
+
+  for (const reg of regs) {
+    const key = queueKey(reg.itemId, normalizeWishlistType(reg.queueType));
+    countMap.set(key, (countMap.get(key) ?? 0) + 1);
+    if (reg.userId === userId) {
+      myRegs.push({
+        id: reg.id,
+        itemId: reg.itemId,
+        queueType: reg.queueType,
+        quantityRequested: reg.quantityRequested,
+        status: reg.status,
+        carryDepth: reg.carryDepth,
+      });
+    }
   }
 
   // Skip full-queue ordering here — cards lazy-load queue details, and building

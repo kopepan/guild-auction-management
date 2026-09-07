@@ -203,8 +203,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user?.id) token.sub = user.id;
-      // Always refresh profile from DB. Request slowness was Discord HTTP, not
-      // this query — stale JWT broke Gear Rating / confirm redirects.
+      // Refresh profile through the in-process cache (invalidated on writes).
+      // Hitting Postgres on every request made /wishlist feel multi-second on
+      // Railway whenever the pool had gone idle.
       return hydrateProfileToken(token);
     },
     session({ session, token }) {

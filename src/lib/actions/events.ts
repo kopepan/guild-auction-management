@@ -49,6 +49,7 @@ import {
   getEvent,
   getPreviousRound,
   getRoundQueues,
+  invalidateRegistrationRoundCache,
   listRoundItems,
   queueKey,
 } from "@/lib/queries";
@@ -79,6 +80,7 @@ async function assertUniqueWeek(startsOn: string, excludeEventId?: string) {
 }
 
 function revalidateEventPages(eventId?: string) {
+  invalidateRegistrationRoundCache();
   revalidatePath("/admin/events");
   revalidatePath("/events");
   revalidatePath("/wishlist");

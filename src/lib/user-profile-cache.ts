@@ -20,7 +20,9 @@ export type UserProfileRow = {
 type CacheEntry = { savedAt: number; profile: UserProfileRow };
 
 const cache = new Map<string, CacheEntry>();
-const TTL_MS = 5_000;
+const inflight = new Map<string, Promise<UserProfileRow | null>>();
+/** Long enough to cover bootstrap + page fetch; writes call invalidate. */
+const TTL_MS = 60_000;
 
 export function invalidateUserProfileCache(userId: string) {
   cache.delete(userId);
@@ -34,37 +36,47 @@ export async function getUserProfile(
     return hit.profile;
   }
 
-  const started = performance.now();
-  const [record] = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      image: users.image,
-      role: users.role,
-      characterName: users.characterName,
-      inGameId: users.inGameId,
-      gearRating: users.gearRating,
-      gearRatingSubmittedEventId: users.gearRatingSubmittedEventId,
-      wishlistConfirmedEventId: users.wishlistConfirmedEventId,
-      discordRoleIds: users.discordRoleIds,
-      isActive: users.isActive,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+  const pending = inflight.get(userId);
+  if (pending) return pending;
 
-  if (process.env.RAILWAY_ENVIRONMENT || process.env.TIMING_LOGS === "1") {
-    const ms = Math.round(performance.now() - started);
-    console.info(
-      `[timing] userProfile.db ${ms}ms cache=${hit ? "stale" : "miss"}`,
-    );
-  }
+  const load = (async (): Promise<UserProfileRow | null> => {
+    const started = performance.now();
+    const [record] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        image: users.image,
+        role: users.role,
+        characterName: users.characterName,
+        inGameId: users.inGameId,
+        gearRating: users.gearRating,
+        gearRatingSubmittedEventId: users.gearRatingSubmittedEventId,
+        wishlistConfirmedEventId: users.wishlistConfirmedEventId,
+        discordRoleIds: users.discordRoleIds,
+        isActive: users.isActive,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
-  if (!record) {
-    cache.delete(userId);
-    return null;
-  }
+    if (process.env.RAILWAY_ENVIRONMENT || process.env.TIMING_LOGS === "1") {
+      const ms = Math.round(performance.now() - started);
+      console.info(
+        `[timing] userProfile.db ${ms}ms cache=${hit ? "stale" : "miss"}`,
+      );
+    }
 
-  cache.set(userId, { savedAt: Date.now(), profile: record });
-  return record;
+    if (!record) {
+      cache.delete(userId);
+      return null;
+    }
+
+    cache.set(userId, { savedAt: Date.now(), profile: record });
+    return record;
+  })().finally(() => {
+    inflight.delete(userId);
+  });
+
+  inflight.set(userId, load);
+  return load;
 }

@@ -36,7 +36,10 @@ const client =
     // Private Railway networking does not need TLS; skipping handshake saves
     // a noticeable chunk of every query on the hobby tier.
     ssl: useInternalRailway ? false : undefined,
-    idle_timeout: 20,
+    // Keep connections warm. A 20s idle timeout was closing the pool between
+    // page loads so the next request paid ~1s reconnect before any query.
+    idle_timeout: isServerless ? 20 : 300,
+    max_lifetime: isServerless ? 60 * 30 : 60 * 60,
     connect_timeout: 10,
   });
 

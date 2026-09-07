@@ -22,7 +22,10 @@ import {
 } from "@/lib/page-loaders/types";
 import { buildWishlistCards } from "@/lib/wishlist-cards";
 import { evaluateCanConfirmWishlist } from "@/lib/wishlist-completion";
-import { hasGearQueueSlotUsed } from "@/lib/gear-queue-limit";
+import {
+  gearQueueSlotUsedFromRegistrations,
+  hasGearQueueSlotUsed,
+} from "@/lib/gear-queue-limit";
 import { itemAllowsQuantity } from "@/lib/policy";
 import { timed } from "@/lib/timing";
 import { actsAsMember, isViewAsMember } from "@/lib/view-as-member";
@@ -204,15 +207,23 @@ export async function loadWishlist(): Promise<PageLoaderResult<unknown>> {
       return redirectTo("/wishlist/complete");
     }
 
-    const [roundItems, penalty, gearLimitUsed] = await Promise.all([
+    const [roundItems, penalty] = await Promise.all([
       timed("listWishlistRoundItems", () =>
         listWishlistRoundItems(round.id, user.id),
       ),
       timed("wishlist.penalty", () => getActivePenaltyForUser(user.id)),
-      timed("wishlist.gearLimit", () =>
-        hasGearQueueSlotUsed(user.id, round.id),
-      ),
     ]);
+
+    const gearLimitUsed = gearQueueSlotUsedFromRegistrations(
+      roundItems.flatMap((item) =>
+        item.queues
+          .filter((queue) => queue.myRegistration)
+          .map((queue) => ({
+            queueType: queue.queueType,
+            status: queue.myRegistration!.status,
+          })),
+      ),
+    );
 
     const hasGearQueueItems = roundItems.some((item) =>
       item.queues.some((queue) => queue.queueType === "gear_queue"),
