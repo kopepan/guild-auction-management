@@ -402,15 +402,8 @@ export async function listWishlistRoundItems(
     );
   }
 
-  const myRefs = myRegs.map((row) => ({
-    itemId: row.itemId,
-    queueType: normalizeWishlistType(row.queueType),
-  }));
-  const orderedQueues =
-    myRefs.length > 0
-      ? await getRoundQueues(eventId, myRefs, { skipPenaltyCheck: true })
-      : new Map<string, QueueRow[]>();
-
+  // Skip full-queue ordering here — cards lazy-load queue details, and building
+  // every registered queue on page load was multi-second on Railway.
   return sortItemsByDisplayOrder(
     rows.map((row) => {
       const queueTypes = normalizeWishlistTypes(row.queueTypes);
@@ -421,10 +414,6 @@ export async function listWishlistRoundItems(
             reg.itemId === row.itemId &&
             normalizeWishlistType(reg.queueType) === queueType,
         );
-        const ordered = orderedQueues.get(key) ?? [];
-        const mine = mineReg
-          ? ordered.find((entry) => entry.userId === userId)
-          : undefined;
 
         return {
           queueType,
@@ -436,7 +425,7 @@ export async function listWishlistRoundItems(
                 quantityRequested: mineReg.quantityRequested,
                 status: mineReg.status,
                 carryDepth: mineReg.carryDepth,
-                position: mine?.position ?? null,
+                position: null,
               }
             : null,
         };

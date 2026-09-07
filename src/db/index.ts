@@ -14,10 +14,13 @@ const globalForDb = globalThis as unknown as {
   moonshadeSql?: ReturnType<typeof postgres>;
 };
 
+/**
+ * Only true serverless runtimes need a tiny pool. Railway / `next start` is a
+ * long-lived Node process — treating it as serverless forced max=1 and made
+ * every page serialize DB queries (~300ms+ each).
+ */
 const isServerless = Boolean(
-  process.env.NETLIFY ||
-    process.env.RAILWAY_ENVIRONMENT ||
-    process.env.AWS_LAMBDA_FUNCTION_NAME,
+  process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME,
 );
 
 const client =
@@ -28,9 +31,8 @@ const client =
     prepare: false,
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.moonshadeSql = client;
-}
+// Reuse across hot reload and production workers in the same process.
+globalForDb.moonshadeSql = client;
 
 export const db = drizzle(client, { schema });
 export { schema };
