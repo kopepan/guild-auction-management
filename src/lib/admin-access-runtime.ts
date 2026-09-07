@@ -39,25 +39,25 @@ async function saveDiscordRoleIds(userId: string, roles: string[]) {
     .where(eq(users.id, userId));
 }
 
-/** Resolve guild roles from DB, falling back to the Discord bot API. */
+/**
+ * Resolve guild roles from DB first. Only call Discord when we have never
+ * stored roles for this user — otherwise every page/action waits on Discord.
+ * Fresh roles are written on Discord sign-in and member sync.
+ */
 export async function resolveDiscordRoleIds(
   userId: string,
   discordId: string,
+  options?: { refresh?: boolean },
 ): Promise<string[]> {
-  const stored = await loadStoredDiscordRoleIds(userId);
-  if (
-    stored &&
-    stored.length > 0 &&
-    (getAdminDiscordRoleIds().length === 0 ||
-      memberHasAdminDiscordRole(stored))
-  ) {
-    return stored;
+  if (!options?.refresh) {
+    const stored = await loadStoredDiscordRoleIds(userId);
+    if (stored != null) return stored;
   }
 
   const roles = await fetchGuildMemberRoleIds(discordId);
-  if (roles.length > 0) {
-    await saveDiscordRoleIds(userId, roles);
-  }
+  // Persist even an empty list so we do not re-hit Discord on every request
+  // when the member genuinely has no guild roles (or the bot cannot see them).
+  await saveDiscordRoleIds(userId, roles);
   return roles;
 }
 
@@ -110,19 +110,24 @@ export async function ensureDiscordAdminPromotion(
   return "admin";
 }
 
+/**
+ * Effective system-admin flag for the current request.
+ * DB admins short-circuit; everyone else is checked/promoted once via Discord
+ * config without a second Discord round-trip.
+ */
 export async function resolveIsSystemAdmin(
   userId: string,
   currentRole: "member" | "admin",
 ): Promise<boolean> {
+  if (isSystemAdminRole(currentRole)) return true;
   const role = await ensureDiscordAdminPromotion(userId, currentRole);
-  if (isSystemAdminRole(role)) return true;
-  return userHasDiscordAdminAccess(userId);
+  return isSystemAdminRole(role);
 }
 
 export async function persistDiscordRoleIds(
   userId: string,
   roles: string[] | undefined,
 ) {
-  if (!roles || roles.length === 0) return;
+  if (!roles) return;
   await saveDiscordRoleIds(userId, roles);
 }

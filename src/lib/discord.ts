@@ -228,16 +228,21 @@ export async function fetchGuildMemberRoleIds(
   const token = getDiscordBotToken();
   if (!guildId || !token) return [];
 
-  const response = await fetch(
-    `${DISCORD_API}/guilds/${guildId}/members/${discordUserId}`,
-    {
-      headers: { authorization: `Bot ${token}` },
-      cache: "no-store",
-    },
-  );
+  try {
+    const response = await fetch(
+      `${DISCORD_API}/guilds/${guildId}/members/${discordUserId}`,
+      {
+        headers: { authorization: `Bot ${token}` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(2_500),
+      },
+    );
 
-  if (!response.ok) return [];
+    if (!response.ok) return [];
 
-  const member = (await response.json()) as { roles?: string[] };
-  return member.roles ?? [];
+    const member = (await response.json()) as { roles?: string[] };
+    return member.roles ?? [];
+  } catch {
+    return [];
+  }
 }
