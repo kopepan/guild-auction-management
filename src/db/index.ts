@@ -23,16 +23,35 @@ const isServerless = Boolean(
   process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME,
 );
 
+const useInternalRailway =
+  connectionString.includes("railway.internal") ||
+  connectionString.includes(".rlwy.internal");
+
 const client =
   globalForDb.moonshadeSql ??
   postgres(connectionString, {
     max: isServerless ? 1 : 10,
     // Required for pooled/serverless Postgres (Neon, Supabase pooler).
     prepare: false,
+    // Private Railway networking does not need TLS; skipping handshake saves
+    // a noticeable chunk of every query on the hobby tier.
+    ssl: useInternalRailway ? false : undefined,
+    idle_timeout: 20,
+    connect_timeout: 10,
   });
 
+const isNewPool = !globalForDb.moonshadeSql;
 // Reuse across hot reload and production workers in the same process.
 globalForDb.moonshadeSql = client;
+
+if (
+  isNewPool &&
+  (process.env.RAILWAY_ENVIRONMENT || process.env.TIMING_LOGS === "1")
+) {
+  console.info(
+    `[db] pool max=${isServerless ? 1 : 10} internal=${useInternalRailway}`,
+  );
+}
 
 export const db = drizzle(client, { schema });
 export { schema };

@@ -9,6 +9,7 @@ import { db } from "@/db";
 import { accounts, sessions, users, verificationTokens } from "@/db/schema";
 import { shouldPromoteToAdmin } from "@/lib/admin-access";
 import { persistDiscordRoleIds } from "@/lib/admin-access-runtime";
+import { getUserProfile } from "@/lib/user-profile-cache";
 
 declare module "next-auth" {
   interface Session {
@@ -126,15 +127,7 @@ async function promoteIfEligible(
 async function hydrateProfileToken(token: JWT): Promise<JWT> {
   if (!token.sub) return token;
 
-  const started = performance.now();
-  const record = await db.query.users.findFirst({
-    where: eq(users.id, token.sub),
-  });
-  if (process.env.RAILWAY_ENVIRONMENT || process.env.TIMING_LOGS === "1") {
-    console.info(
-      `[timing] auth.jwt.profile.db ${Math.round(performance.now() - started)}ms`,
-    );
-  }
+  const record = await getUserProfile(token.sub);
   if (!record) return token;
 
   token.name = record.name;

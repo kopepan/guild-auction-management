@@ -23,6 +23,7 @@ import {
   memberHasConfirmedWishlist,
 } from "@/lib/wishlist-completion";
 import { timed } from "@/lib/timing";
+import { invalidateUserProfileCache } from "@/lib/user-profile-cache";
 import { revalidatePath } from "next/cache";
 
 function revalidateWishlistPages(eventId: string) {
@@ -164,6 +165,7 @@ export async function confirmWishlistAction(
       })
       .where(eq(users.id, user.id));
 
+    invalidateUserProfileCache(user.id);
     revalidateWishlistPages(eventId);
     return success("wishlist.confirmed");
   });
@@ -190,6 +192,7 @@ export async function editWishlistAction(
       })
       .where(eq(users.id, user.id));
 
+    invalidateUserProfileCache(user.id);
     revalidateWishlistPages(round.id);
     return success("wishlist.editUnlocked");
   });

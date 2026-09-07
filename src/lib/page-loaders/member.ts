@@ -181,31 +181,37 @@ export async function loadRules(): Promise<PageLoaderResult<unknown>> {
 
 export async function loadWishlist(): Promise<PageLoaderResult<unknown>> {
   return timed("loadWishlist", async () => {
-    const loginRedirectPath = await requireUserRedirect();
-    if (loginRedirectPath) return redirectTo(loginRedirectPath);
-
-    const grRedirect = await gearRatingRequiredRedirect();
-    if (grRedirect) return redirectTo(grRedirect);
-
-    const confirmedRedirect = await wishlistConfirmedRedirect();
-    if (confirmedRedirect) return redirectTo(confirmedRedirect);
-
-    const user = await getSessionUser();
+    const user = await timed("wishlist.auth", () => getSessionUser());
     if (!user) return redirectTo("/login");
 
-    const locale = await getLocale();
-    const round = await getRegistrationRound();
+    const [locale, round] = await Promise.all([
+      getLocale(),
+      timed("wishlist.round", () => getRegistrationRound()),
+    ]);
 
     if (!round) {
       return pageData({ round: null });
+    }
+
+    if (
+      user.gearRating == null ||
+      user.gearRatingSubmittedEventId !== round.id
+    ) {
+      return redirectTo("/register/gear-rating");
+    }
+
+    if (user.wishlistConfirmedEventId === round.id) {
+      return redirectTo("/wishlist/complete");
     }
 
     const [roundItems, penalty, gearLimitUsed] = await Promise.all([
       timed("listWishlistRoundItems", () =>
         listWishlistRoundItems(round.id, user.id),
       ),
-      getActivePenaltyForUser(user.id),
-      hasGearQueueSlotUsed(user.id, round.id),
+      timed("wishlist.penalty", () => getActivePenaltyForUser(user.id)),
+      timed("wishlist.gearLimit", () =>
+        hasGearQueueSlotUsed(user.id, round.id),
+      ),
     ]);
 
     const hasGearQueueItems = roundItems.some((item) =>

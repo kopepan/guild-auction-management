@@ -14,6 +14,7 @@ import {
   type ActionState,
 } from "@/lib/actions/types";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
+import { invalidateUserProfileCache } from "@/lib/user-profile-cache";
 import { getRegistrationRound } from "@/lib/queries";
 
 export async function updateProfileAction(
@@ -59,6 +60,8 @@ export async function updateProfileAction(
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id));
+
+    invalidateUserProfileCache(user.id);
 
     if (forRegistrationRound && round) {
       await db
