@@ -53,10 +53,13 @@ export type WishlistCardItem = {
 export function WishlistItemCard({
   item,
   eventId,
+  replaceGearFrom = null,
   onChanged,
 }: {
   item: WishlistCardItem;
   eventId: string;
+  /** When set, registering for this gear-queue item replaces the pending one. */
+  replaceGearFrom?: { name: string } | null;
   onChanged?: () => void;
 }) {
   const t = useT();
@@ -236,12 +239,17 @@ export function WishlistItemCard({
       ) : confirmingRegister ? (
         <div className="space-y-3 rounded-lg border border-moon-500/30 bg-moon-600/10 px-3 py-3">
           <p className="text-sm text-moon-100">
-            {item.allowsQuantity && quantity > 1
-              ? t("wishlist.confirmRegisterQuantity", {
-                  item: item.name,
-                  quantity,
+            {replaceGearFrom
+              ? t("wishlist.confirmSwitch", {
+                  from: replaceGearFrom.name,
+                  to: item.name,
                 })
-              : t("wishlist.confirmRegister", { item: item.name })}
+              : item.allowsQuantity && quantity > 1
+                ? t("wishlist.confirmRegisterQuantity", {
+                    item: item.name,
+                    quantity,
+                  })
+                : t("wishlist.confirmRegister", { item: item.name })}
           </p>
           <p className="text-xs text-white/45">
             {t(`wishlistType.${item.wishlistType}.hint` as TranslationKey)}
@@ -289,7 +297,7 @@ export function WishlistItemCard({
             onClick={() => setConfirmingRegister(true)}
           >
             <PlusCircle className="size-4" aria-hidden />
-            {t("wishlist.register")}
+            {replaceGearFrom ? t("wishlist.switch") : t("wishlist.register")}
           </button>
         </div>
       )}

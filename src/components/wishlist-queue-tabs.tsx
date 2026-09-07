@@ -74,8 +74,15 @@ export function WishlistQueueTabs({
     availableTypes,
   );
 
-  const visibleItems = items.filter(
-    (item) => item.wishlistType === activeType,
+  const visibleItems = items
+    .filter((item) => item.wishlistType === activeType)
+    .slice()
+    .sort((a, b) => Number(Boolean(b.registration)) - Number(Boolean(a.registration)));
+
+  const pendingGearItem = items.find(
+    (item) =>
+      item.wishlistType === "gear_queue" &&
+      item.registration?.status === "pending",
   );
 
   const currentStep: RegistrationStep =
@@ -153,6 +160,14 @@ export function WishlistQueueTabs({
               key={`${item.itemId}:${item.wishlistType}`}
               eventId={eventId}
               item={item}
+              replaceGearFrom={
+                item.wishlistType === "gear_queue" &&
+                !item.registration &&
+                pendingGearItem &&
+                pendingGearItem.itemId !== item.itemId
+                  ? { name: pendingGearItem.name }
+                  : null
+              }
               onChanged={onChanged}
             />
           ))}

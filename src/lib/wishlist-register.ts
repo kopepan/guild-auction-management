@@ -95,6 +95,7 @@ export async function registerForWishlist(input: {
       id: registrations.id,
       itemId: registrations.itemId,
       queueType: registrations.queueType,
+      status: registrations.status,
     })
     .from(registrations)
     .where(
@@ -118,6 +119,22 @@ export async function registerForWishlist(input: {
     )
   ) {
     return { ok: false, message: "error.alreadyRegistered" };
+  }
+
+  // Gear Rating queue: one item at a time. Pending entries can be switched by
+  // withdrawing the old one first, then registering the new item.
+  if (input.queueType === "gear_queue") {
+    const pendingGear = mine.filter(
+      (entry) =>
+        normalizeWishlistType(entry.queueType) === "gear_queue" &&
+        entry.status === "pending",
+    );
+    for (const entry of pendingGear) {
+      await db
+        .update(registrations)
+        .set({ status: "withdrawn", settledAt: new Date() })
+        .where(eq(registrations.id, entry.id));
+    }
   }
 
   if (rules.countsTowardWeeklyLimit) {

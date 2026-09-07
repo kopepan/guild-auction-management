@@ -8,7 +8,10 @@ import {
   type WishlistType,
 } from "@/lib/policy";
 
-/** Statuses that still occupy the single gear-queue slot for a round. */
+/**
+ * Statuses that occupy the single gear-queue slot for a round.
+ * `withdrawn` is excluded so members can switch items while registration is open.
+ */
 const GEAR_SLOT_ACTIVE_STATUSES = [
   "pending",
   "allocated",
@@ -17,7 +20,6 @@ const GEAR_SLOT_ACTIVE_STATUSES = [
   "forfeited",
   "skipped",
   "unfilled",
-  "withdrawn",
 ] as const;
 
 function isGearQueueType(queueType: string): boolean {
@@ -26,8 +28,8 @@ function isGearQueueType(queueType: string): boolean {
 }
 
 /**
- * True when the member has already used their one Gear Rating queue slot this
- * round — including carried entries and withdrawn attempts (no swapping items).
+ * True when the member already has an active Gear Rating queue entry this round
+ * (pending or past draw). Withdrawn entries do not count — switching is allowed.
  */
 export async function hasGearQueueSlotUsed(
   userId: string,

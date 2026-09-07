@@ -26,6 +26,13 @@ export function buildWishlistCards({
     item.queues.some((queue) => queue.queueType === "gear_queue"),
   );
   const gearStepComplete = gearLimitUsed || !hasGearQueueItems;
+  const pendingGearExists = roundItems.some((item) =>
+    item.queues.some(
+      (queue) =>
+        queue.queueType === "gear_queue" &&
+        queue.myRegistration?.status === "pending",
+    ),
+  );
 
   const cards: WishlistCardItem[] = roundItems.flatMap((item) =>
     item.queues.map((queue) => {
@@ -35,7 +42,12 @@ export function buildWishlistCards({
       if (queue.myRegistration === null) {
         if (penalty) blockedReason = "error.penaltyActive";
         else if (!user.isActive) blockedReason = "error.memberInactive";
-        else if (rules.countsTowardWeeklyLimit && gearLimitUsed) {
+        // Pending gear entries can be switched — don't lock other GR items.
+        else if (
+          rules.countsTowardWeeklyLimit &&
+          gearLimitUsed &&
+          !pendingGearExists
+        ) {
           blockedReason = "error.weeklyGearLimit";
         }
       }

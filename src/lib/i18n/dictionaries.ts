@@ -143,11 +143,13 @@ const en = {
     "Watch Discord for draw results. If you need to change your entries before the round closes, use Edit entries below.",
   "wishlist.confirmRegister": "Queue for {item}?",
   "wishlist.confirmRegisterQuantity": "Queue for {item} ×{quantity}?",
+  "wishlist.confirmSwitch": "Switch from {from} to {to}?",
+  "wishlist.switch": "Switch to this item",
   "wishlist.confirmWithdraw": "Confirm withdraw",
   "wishlist.confirmWithdrawPrompt": "Withdraw from {item}?",
   "wishlist.myEntriesSummary": "Your registrations this round",
   "wishlist.myEntriesSummaryHint":
-    "Your queue positions update when the manager draws this round.",
+    "Your queue positions update when the manager draws this round. For the Gear Rating queue, pick another item to switch.",
 
   "items.title": "Items & Queues",
   "items.subtitle":
@@ -612,11 +614,13 @@ const th: Record<TranslationKey, string> = {
     "ติดตามผลการจัดคิวได้ใน Discord หากต้องการเปลี่ยนรายการก่อนปิดรอบ กดแก้ไขรายการด้านล่าง",
   "wishlist.confirmRegister": "ลงคิว {item}?",
   "wishlist.confirmRegisterQuantity": "ลงคิว {item} ×{quantity}?",
+  "wishlist.confirmSwitch": "เปลี่ยนจาก {from} เป็น {to}?",
+  "wishlist.switch": "เปลี่ยนมาจองชิ้นนี้",
   "wishlist.confirmWithdraw": "ยืนยันยกเลิก",
   "wishlist.confirmWithdrawPrompt": "ยกเลิกการลงคิว {item}?",
   "wishlist.myEntriesSummary": "รายการที่ลงทะเบียนรอบนี้",
   "wishlist.myEntriesSummaryHint":
-    "ลำดับคิวจะอัปเดตเมื่อแอดมินจัดคิวในรอบนี้",
+    "ลำดับคิวจะอัปเดตเมื่อแอดมินจัดคิวในรอบนี้ — คิว GR กดจองไอเท็มอื่นได้เลยเพื่อเปลี่ยน",
 
   "items.title": "ไอเทมและคิว",
   "items.subtitle": "ไอเทมทั้งหมดที่กิลด์แจก พร้อมกติกาการจัดลำดับคิวของแต่ละชิ้น",
