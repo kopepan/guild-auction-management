@@ -44,7 +44,10 @@ export async function memberHasGearRatingForRound(
 export async function getRegistrationEntryPath(
   user: Pick<
     SessionUser,
-    "id" | "gearRating" | "gearRatingSubmittedEventId"
+    | "id"
+    | "gearRating"
+    | "gearRatingSubmittedEventId"
+    | "wishlistConfirmedEventId"
   >,
 ): Promise<"/register/gear-rating" | "/wishlist" | "/wishlist/complete"> {
   const round = await getRegistrationRound();
@@ -54,7 +57,7 @@ export async function getRegistrationEntryPath(
     user.gearRating != null && user.gearRatingSubmittedEventId === round.id;
   if (!grComplete) return "/register/gear-rating";
 
-  if (await memberHasConfirmedWishlist(user.id, round.id)) {
+  if (user.wishlistConfirmedEventId === round.id) {
     return "/wishlist/complete";
   }
   return "/wishlist";

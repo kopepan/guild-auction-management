@@ -1,6 +1,7 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { count, eq } from "drizzle-orm";
 import NextAuth, { type DefaultSession } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Discord from "next-auth/providers/discord";
 
@@ -18,8 +19,26 @@ declare module "next-auth" {
       inGameId: string | null;
       gearRating: number | null;
       gearRatingSubmittedEventId: string | null;
+      wishlistConfirmedEventId: string | null;
+      discordRoleIds: string[];
       isActive: boolean;
     } & DefaultSession["user"];
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    role?: "member" | "admin";
+    characterName?: string | null;
+    inGameId?: string | null;
+    gearRating?: number | null;
+    gearRatingSubmittedEventId?: string | null;
+    wishlistConfirmedEventId?: string | null;
+    discordRoleIds?: string[];
+    isActive?: boolean;
+    image?: string | null;
+    name?: string | null;
+    profileCachedAt?: number;
   }
 }
 
@@ -55,16 +74,21 @@ async function fetchGuildMember(
 ): Promise<DiscordGuildMember | null> {
   if (!discordGuildId) return null;
 
-  const response = await fetch(
-    `https://discord.com/api/users/@me/guilds/${discordGuildId}/member`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    },
-  );
+  try {
+    const response = await fetch(
+      `https://discord.com/api/users/@me/guilds/${discordGuildId}/member`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(2_500),
+      },
+    );
 
-  if (!response.ok) return null;
-  return (await response.json()) as DiscordGuildMember;
+    if (!response.ok) return null;
+    return (await response.json()) as DiscordGuildMember;
+  } catch {
+    return null;
+  }
 }
 
 function resolveGuildDisplayName(member: DiscordGuildMember): string | null {
@@ -97,6 +121,34 @@ async function promoteIfEligible(
   ) {
     await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
   }
+}
+
+async function hydrateProfileToken(token: JWT): Promise<JWT> {
+  if (!token.sub) return token;
+
+  const started = performance.now();
+  const record = await db.query.users.findFirst({
+    where: eq(users.id, token.sub),
+  });
+  if (process.env.RAILWAY_ENVIRONMENT || process.env.TIMING_LOGS === "1") {
+    console.info(
+      `[timing] auth.jwt.profile.db ${Math.round(performance.now() - started)}ms`,
+    );
+  }
+  if (!record) return token;
+
+  token.name = record.name;
+  token.picture = record.image;
+  token.role = record.role;
+  token.characterName = record.characterName;
+  token.inGameId = record.inGameId;
+  token.gearRating = record.gearRating;
+  token.gearRatingSubmittedEventId = record.gearRatingSubmittedEventId;
+  token.wishlistConfirmedEventId = record.wishlistConfirmedEventId;
+  token.discordRoleIds = record.discordRoleIds ?? [];
+  token.isActive = record.isActive;
+  token.profileCachedAt = Date.now();
+  return token;
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -156,31 +208,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       : []),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user?.id) token.sub = user.id;
-      return token;
+      // Always refresh profile from DB. Request slowness was Discord HTTP, not
+      // this query — stale JWT broke Gear Rating / confirm redirects.
+      return hydrateProfileToken(token);
     },
-    // Role and profile are read fresh on every request so that promoting a
-    // member to admin takes effect without them signing out.
-    async session({ session, token }) {
+    session({ session, token }) {
       if (!token.sub) return session;
-
-      const record = await db.query.users.findFirst({
-        where: eq(users.id, token.sub),
-      });
-      if (!record) return session;
 
       session.user = {
         ...session.user,
-        id: record.id,
-        name: record.name,
-        image: record.image,
-        role: record.role,
-        characterName: record.characterName,
-        inGameId: record.inGameId,
-        gearRating: record.gearRating,
-        gearRatingSubmittedEventId: record.gearRatingSubmittedEventId,
-        isActive: record.isActive,
+        id: token.sub,
+        name: token.name ?? session.user.name,
+        image: (token.picture as string | null | undefined) ?? session.user.image,
+        role: token.role ?? "member",
+        characterName: token.characterName ?? null,
+        inGameId: token.inGameId ?? null,
+        gearRating: token.gearRating ?? null,
+        gearRatingSubmittedEventId: token.gearRatingSubmittedEventId ?? null,
+        wishlistConfirmedEventId: token.wishlistConfirmedEventId ?? null,
+        discordRoleIds: token.discordRoleIds ?? [],
+        isActive: token.isActive ?? true,
       };
       return session;
     },

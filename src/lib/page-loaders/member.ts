@@ -20,14 +20,11 @@ import {
   redirectTo,
   type PageLoaderResult,
 } from "@/lib/page-loaders/types";
-import { memberHasGearRatingForRound } from "@/lib/phase";
 import { buildWishlistCards } from "@/lib/wishlist-cards";
-import {
-  canConfirmWishlist,
-  memberHasConfirmedWishlist,
-} from "@/lib/wishlist-completion";
+import { evaluateCanConfirmWishlist } from "@/lib/wishlist-completion";
 import { hasGearQueueSlotUsed } from "@/lib/gear-queue-limit";
 import { itemAllowsQuantity } from "@/lib/policy";
+import { timed } from "@/lib/timing";
 import { actsAsMember, isViewAsMember } from "@/lib/view-as-member";
 import {
   ensureRoundHasActiveCatalogue,
@@ -183,48 +180,67 @@ export async function loadRules(): Promise<PageLoaderResult<unknown>> {
 }
 
 export async function loadWishlist(): Promise<PageLoaderResult<unknown>> {
-  const loginRedirectPath = await requireUserRedirect();
-  if (loginRedirectPath) return redirectTo(loginRedirectPath);
+  return timed("loadWishlist", async () => {
+    const loginRedirectPath = await requireUserRedirect();
+    if (loginRedirectPath) return redirectTo(loginRedirectPath);
 
-  const grRedirect = await gearRatingRequiredRedirect();
-  if (grRedirect) return redirectTo(grRedirect);
+    const grRedirect = await gearRatingRequiredRedirect();
+    if (grRedirect) return redirectTo(grRedirect);
 
-  const confirmedRedirect = await wishlistConfirmedRedirect();
-  if (confirmedRedirect) return redirectTo(confirmedRedirect);
+    const confirmedRedirect = await wishlistConfirmedRedirect();
+    if (confirmedRedirect) return redirectTo(confirmedRedirect);
 
-  const user = await getSessionUser();
-  if (!user) return redirectTo("/login");
+    const user = await getSessionUser();
+    if (!user) return redirectTo("/login");
 
-  const locale = await getLocale();
-  const round = await getRegistrationRound();
+    const locale = await getLocale();
+    const round = await getRegistrationRound();
 
-  if (!round) {
-    return pageData({ round: null });
-  }
+    if (!round) {
+      return pageData({ round: null });
+    }
 
-  const [roundItems, penalty, gearLimitUsed, confirmCheck] = await Promise.all([
-    listWishlistRoundItems(round.id, user.id),
-    getActivePenaltyForUser(user.id),
-    hasGearQueueSlotUsed(user.id, round.id),
-    canConfirmWishlist(user.id, round.id),
-  ]);
+    const [roundItems, penalty, gearLimitUsed] = await Promise.all([
+      timed("listWishlistRoundItems", () =>
+        listWishlistRoundItems(round.id, user.id),
+      ),
+      getActivePenaltyForUser(user.id),
+      hasGearQueueSlotUsed(user.id, round.id),
+    ]);
 
-  const { cards, gearStepComplete } = buildWishlistCards({
-    locale,
-    user,
-    roundItems,
-    penalty,
-    gearLimitUsed,
-  });
+    const hasGearQueueItems = roundItems.some((item) =>
+      item.queues.some((queue) => queue.queueType === "gear_queue"),
+    );
+    const hasPendingEntry = roundItems.some((item) =>
+      item.queues.some((queue) => queue.myRegistration?.status === "pending"),
+    );
+    const confirmCheck = evaluateCanConfirmWishlist({
+      gearRating: user.gearRating,
+      gearRatingSubmittedEventId: user.gearRatingSubmittedEventId,
+      wishlistConfirmedEventId: user.wishlistConfirmedEventId,
+      roundId: round.id,
+      hasGearQueueItems,
+      gearLimitUsed,
+      hasPendingEntry,
+    });
 
-  return pageData({
-    round,
-    penalty,
-    gearLimitUsed,
-    cards,
-    gearStepComplete,
-    confirmCheck,
-    isSystemAdmin: user.isSystemAdmin,
+    const { cards, gearStepComplete } = buildWishlistCards({
+      locale,
+      user,
+      roundItems,
+      penalty,
+      gearLimitUsed,
+    });
+
+    return pageData({
+      round,
+      penalty,
+      gearLimitUsed,
+      cards,
+      gearStepComplete,
+      confirmCheck,
+      isSystemAdmin: user.isSystemAdmin,
+    });
   });
 }
 
@@ -289,14 +305,15 @@ export async function loadRegisterGearRating(): Promise<PageLoaderResult<unknown
   const round = await getRegistrationRound();
   if (!round) return redirectTo("/wishlist");
 
-  if (await memberHasConfirmedWishlist(user.id, round.id)) {
+  if (user.wishlistConfirmedEventId === round.id) {
     return redirectTo("/wishlist/complete");
   }
 
   return pageData({
     round,
     gearRating: user.gearRating,
-    alreadySubmitted: await memberHasGearRatingForRound(user.id, round.id),
+    alreadySubmitted:
+      user.gearRating != null && user.gearRatingSubmittedEventId === round.id,
     gearStepComplete: await hasGearQueueSlotUsed(user.id, round.id),
   });
 }

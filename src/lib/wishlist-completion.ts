@@ -17,6 +17,37 @@ export async function memberHasConfirmedWishlist(
   return record?.wishlistConfirmedEventId === roundId;
 }
 
+export function evaluateCanConfirmWishlist(input: {
+  gearRating: number | null;
+  gearRatingSubmittedEventId: string | null;
+  wishlistConfirmedEventId: string | null;
+  roundId: string;
+  hasGearQueueItems: boolean;
+  gearLimitUsed: boolean;
+  hasPendingEntry: boolean;
+}): { ok: true } | { ok: false; message: TranslationKey } {
+  if (
+    input.gearRating == null ||
+    input.gearRatingSubmittedEventId !== input.roundId
+  ) {
+    return { ok: false, message: "error.gearRatingRequired" };
+  }
+
+  if (input.wishlistConfirmedEventId === input.roundId) {
+    return { ok: false, message: "wishlist.alreadyConfirmed" };
+  }
+
+  if (input.hasGearQueueItems && !input.gearLimitUsed) {
+    return { ok: false, message: "error.completeGearQueueFirst" };
+  }
+
+  if (!input.hasPendingEntry) {
+    return { ok: false, message: "wishlist.confirmNeedsEntry" };
+  }
+
+  return { ok: true };
+}
+
 /**
  * True when the member may finish registration: gear obligation met and at
  * least one queue entry exists for this round.
@@ -35,42 +66,37 @@ export async function canConfirmWishlist(
   });
   if (!record) return { ok: false, message: "error.notFound" };
 
-  if (
-    record.gearRating == null ||
-    record.gearRatingSubmittedEventId !== roundId
-  ) {
-    return { ok: false, message: "error.gearRatingRequired" };
-  }
-
-  if (record.wishlistConfirmedEventId === roundId) {
-    return { ok: false, message: "wishlist.alreadyConfirmed" };
-  }
-
-  const roundItems = await db
-    .select({ queueTypes: eventItems.queueTypes })
-    .from(eventItems)
-    .where(eq(eventItems.eventId, roundId));
+  const [roundItems, gearLimitUsed, entry] = await Promise.all([
+    db
+      .select({ queueTypes: eventItems.queueTypes })
+      .from(eventItems)
+      .where(eq(eventItems.eventId, roundId)),
+    hasGearQueueSlotUsed(userId, roundId),
+    db
+      .select({ id: registrations.id })
+      .from(registrations)
+      .where(
+        and(
+          eq(registrations.eventId, roundId),
+          eq(registrations.userId, userId),
+          eq(registrations.status, "pending"),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
 
   const hasGearQueueItems = roundItems.some((row) =>
     normalizeWishlistTypes(row.queueTypes).includes("gear_queue"),
   );
-  if (hasGearQueueItems && !(await hasGearQueueSlotUsed(userId, roundId))) {
-    return { ok: false, message: "error.completeGearQueueFirst" };
-  }
 
-  const [entry] = await db
-    .select({ id: registrations.id })
-    .from(registrations)
-    .where(
-      and(
-        eq(registrations.eventId, roundId),
-        eq(registrations.userId, userId),
-        eq(registrations.status, "pending"),
-      ),
-    )
-    .limit(1);
-
-  if (!entry) return { ok: false, message: "wishlist.confirmNeedsEntry" };
-
-  return { ok: true };
+  return evaluateCanConfirmWishlist({
+    gearRating: record.gearRating,
+    gearRatingSubmittedEventId: record.gearRatingSubmittedEventId,
+    wishlistConfirmedEventId: record.wishlistConfirmedEventId,
+    roundId,
+    hasGearQueueItems,
+    gearLimitUsed,
+    hasPendingEntry: Boolean(entry),
+  });
 }

@@ -4,6 +4,7 @@ import { cache } from "react";
 import { auth } from "@/auth";
 import { ActionError } from "@/lib/action-error";
 import { resolveIsSystemAdmin } from "@/lib/admin-access-runtime";
+import { timed } from "@/lib/timing";
 
 export { ActionError };
 
@@ -18,38 +19,50 @@ export type SessionUser = {
   inGameId: string | null;
   gearRating: number | null;
   gearRatingSubmittedEventId: string | null;
+  wishlistConfirmedEventId: string | null;
+  discordRoleIds: string[];
   isActive: boolean;
 };
 
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
-  let session;
-  try {
-    session = await auth();
-  } catch {
-    // Stale or tampered JWT cookies (e.g. after AUTH_SECRET changed) should
-    // behave like a signed-out visitor, not crash the layout.
-    return null;
-  }
-  if (!session?.user?.id) return null;
+  return timed("getSessionUser", async () => {
+    let session;
+    try {
+      session = await timed("auth()", () => auth());
+    } catch {
+      // Stale or tampered JWT cookies (e.g. after AUTH_SECRET changed) should
+      // behave like a signed-out visitor, not crash the layout.
+      return null;
+    }
+    if (!session?.user?.id) return null;
 
-  const isSystemAdmin = await resolveIsSystemAdmin(
-    session.user.id,
-    session.user.role,
-  );
-  const role = isSystemAdmin ? "admin" : session.user.role;
+    const isSystemAdmin = await timed(
+      "resolveIsSystemAdmin",
+      () =>
+        resolveIsSystemAdmin(
+          session.user.id,
+          session.user.role,
+          session.user.discordRoleIds,
+        ),
+      { role: session.user.role },
+    );
+    const role = isSystemAdmin ? "admin" : session.user.role;
 
-  return {
-    id: session.user.id,
-    name: session.user.name ?? null,
-    image: session.user.image ?? null,
-    role,
-    isSystemAdmin,
-    characterName: session.user.characterName,
-    inGameId: session.user.inGameId,
-    gearRating: session.user.gearRating,
-    gearRatingSubmittedEventId: session.user.gearRatingSubmittedEventId,
-    isActive: session.user.isActive,
-  };
+    return {
+      id: session.user.id,
+      name: session.user.name ?? null,
+      image: session.user.image ?? null,
+      role,
+      isSystemAdmin,
+      characterName: session.user.characterName,
+      inGameId: session.user.inGameId,
+      gearRating: session.user.gearRating,
+      gearRatingSubmittedEventId: session.user.gearRatingSubmittedEventId,
+      wishlistConfirmedEventId: session.user.wishlistConfirmedEventId,
+      discordRoleIds: session.user.discordRoleIds ?? [],
+      isActive: session.user.isActive,
+    };
+  });
 });
 
 export async function requireUser(): Promise<SessionUser> {

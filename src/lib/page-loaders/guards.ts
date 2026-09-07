@@ -1,10 +1,6 @@
 import { getSessionUser } from "@/lib/guards";
-import {
-  getRegistrationEntryPath,
-  memberHasGearRatingForRound,
-} from "@/lib/phase";
+import { getRegistrationEntryPath } from "@/lib/phase";
 import { getRegistrationRound } from "@/lib/queries";
-import { memberHasConfirmedWishlist } from "@/lib/wishlist-completion";
 import { actsAsMember, isViewAsMember } from "@/lib/view-as-member";
 
 export async function registrationRedirectForActor(): Promise<string | null> {
@@ -58,7 +54,8 @@ export async function gearRatingRequiredRedirect(): Promise<string | null> {
   const round = await getRegistrationRound();
   if (!round) return null;
 
-  const complete = await memberHasGearRatingForRound(user.id, round.id);
+  const complete =
+    user.gearRating != null && user.gearRatingSubmittedEventId === round.id;
   return complete ? null : "/register/gear-rating";
 }
 
@@ -72,7 +69,7 @@ export async function wishlistConfirmedRedirect(): Promise<string | null> {
   const round = await getRegistrationRound();
   if (!round) return null;
 
-  if (await memberHasConfirmedWishlist(user.id, round.id)) {
+  if (user.wishlistConfirmedEventId === round.id) {
     return "/wishlist/complete";
   }
   return null;
@@ -96,7 +93,7 @@ export async function wishlistNotConfirmedRedirect(): Promise<string | null> {
   const round = await getRegistrationRound();
   if (!round) return "/wishlist";
 
-  if (!(await memberHasConfirmedWishlist(user.id, round.id))) {
+  if (user.wishlistConfirmedEventId !== round.id) {
     return "/wishlist";
   }
   return null;
@@ -114,7 +111,8 @@ export async function gearRatingCompleteRedirect(): Promise<string | null> {
   const round = await getRegistrationRound();
   if (!round) return "/wishlist";
 
-  const complete = await memberHasGearRatingForRound(user.id, round.id);
+  const complete =
+    user.gearRating != null && user.gearRatingSubmittedEventId === round.id;
   if (complete) return getRegistrationEntryPath(user);
   return null;
 }

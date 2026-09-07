@@ -1,4 +1,4 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { accounts, users } from "@/db/schema";
@@ -7,9 +7,9 @@ import {
   getAdminDiscordUserIds,
   isSystemAdminRole,
   memberHasAdminDiscordRole,
-  shouldPromoteToAdmin,
 } from "@/lib/admin-access";
 import { fetchGuildMemberRoleIds } from "@/lib/discord";
+import { timed } from "@/lib/timing";
 
 export async function getDiscordAccountIdForUser(
   userId: string,
@@ -40,9 +40,9 @@ async function saveDiscordRoleIds(userId: string, roles: string[]) {
 }
 
 /**
- * Resolve guild roles from DB first. Only call Discord when we have never
- * stored roles for this user — otherwise every page/action waits on Discord.
- * Fresh roles are written on Discord sign-in and member sync.
+ * Prefer DB-cached guild roles. Never call Discord on the request hot path —
+ * Railway logs showed multi-second stalls while waiting on Discord.
+ * Roles refresh on Discord sign-in / member sync (`refresh: true`).
  */
 export async function resolveDiscordRoleIds(
   userId: string,
@@ -51,77 +51,54 @@ export async function resolveDiscordRoleIds(
 ): Promise<string[]> {
   if (!options?.refresh) {
     const stored = await loadStoredDiscordRoleIds(userId);
-    if (stored != null) return stored;
+    return stored ?? [];
   }
 
-  const roles = await fetchGuildMemberRoleIds(discordId);
-  // Persist even an empty list so we do not re-hit Discord on every request
-  // when the member genuinely has no guild roles (or the bot cannot see them).
+  const roles = await timed(
+    "discord.fetchGuildMemberRoleIds",
+    () => fetchGuildMemberRoleIds(discordId),
+    { refresh: true },
+  );
   await saveDiscordRoleIds(userId, roles);
   return roles;
 }
 
-export async function userHasDiscordAdminAccess(userId: string): Promise<boolean> {
-  const adminRoleIds = getAdminDiscordRoleIds();
-  const adminUserIds = getAdminDiscordUserIds();
-  if (adminRoleIds.length === 0 && adminUserIds.length === 0) return false;
-
-  const discordId = await getDiscordAccountIdForUser(userId);
-  if (!discordId) return false;
-  if (adminUserIds.includes(discordId)) return true;
-  if (adminRoleIds.length === 0) return false;
-
-  const roles = await resolveDiscordRoleIds(userId, discordId);
-  return memberHasAdminDiscordRole(roles);
-}
-
-/** Promote Discord-configured managers and return their effective role. */
-export async function ensureDiscordAdminPromotion(
-  userId: string,
-  currentRole: "member" | "admin",
-): Promise<"member" | "admin"> {
-  if (isSystemAdminRole(currentRole)) return "admin";
-
-  const discordId = await getDiscordAccountIdForUser(userId);
-  if (!discordId) return currentRole;
-
-  const adminRoleIds = getAdminDiscordRoleIds();
-  const roles =
-    adminRoleIds.length > 0
-      ? await resolveDiscordRoleIds(userId, discordId)
-      : undefined;
-
-  const [{ value: adminCount }] = await db
-    .select({ value: count() })
-    .from(users)
-    .where(eq(users.role, "admin"));
-
-  if (
-    !shouldPromoteToAdmin({
-      discordId,
-      roles,
-      adminCount,
-    })
-  ) {
-    return currentRole;
-  }
-
+async function promoteToAdmin(userId: string) {
   await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
-  return "admin";
 }
 
 /**
  * Effective system-admin flag for the current request.
- * DB admins short-circuit; everyone else is checked/promoted once via Discord
- * config without a second Discord round-trip.
+ * Uses DB role + cached Discord ids/roles only — no Discord HTTP, no admin-count scan.
  */
 export async function resolveIsSystemAdmin(
   userId: string,
   currentRole: "member" | "admin",
+  storedDiscordRoleIds?: string[] | null,
 ): Promise<boolean> {
   if (isSystemAdminRole(currentRole)) return true;
-  const role = await ensureDiscordAdminPromotion(userId, currentRole);
-  return isSystemAdminRole(role);
+
+  const adminUserIds = getAdminDiscordUserIds();
+  const adminRoleIds = getAdminDiscordRoleIds();
+  if (adminUserIds.length === 0 && adminRoleIds.length === 0) return false;
+
+  // Role-based admins: use roles already loaded with the session profile.
+  if (
+    adminRoleIds.length > 0 &&
+    memberHasAdminDiscordRole(storedDiscordRoleIds ?? [])
+  ) {
+    await promoteToAdmin(userId);
+    return true;
+  }
+
+  if (adminUserIds.length === 0) return false;
+
+  const discordId = await getDiscordAccountIdForUser(userId);
+  if (!discordId) return false;
+  if (!adminUserIds.includes(discordId)) return false;
+
+  await promoteToAdmin(userId);
+  return true;
 }
 
 export async function persistDiscordRoleIds(

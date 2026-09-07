@@ -22,6 +22,7 @@ import {
   canConfirmWishlist,
   memberHasConfirmedWishlist,
 } from "@/lib/wishlist-completion";
+import { timed } from "@/lib/timing";
 import { revalidatePath } from "next/cache";
 
 function revalidateWishlistPages(eventId: string) {
@@ -36,28 +37,32 @@ export async function registerAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  return runAction(async () => {
-    const user = await assertUser();
+  return timed("registerAction", () =>
+    runAction(async () => {
+      const user = await assertUser();
 
-    const itemId = String(formData.get("itemId") ?? "");
-    const requestedQueueType = String(
-      formData.get("queueType") ?? "",
-    ) as WishlistType;
-    const quantityRaw = formData.get("quantity");
-    const quantity =
-      quantityRaw == null || String(quantityRaw).trim() === ""
-        ? undefined
-        : Number(quantityRaw);
+      const itemId = String(formData.get("itemId") ?? "");
+      const requestedQueueType = String(
+        formData.get("queueType") ?? "",
+      ) as WishlistType;
+      const quantityRaw = formData.get("quantity");
+      const quantity =
+        quantityRaw == null || String(quantityRaw).trim() === ""
+          ? undefined
+          : Number(quantityRaw);
 
-    const result = await registerForWishlist({
-      userId: user.id,
-      itemId,
-      queueType: requestedQueueType,
-      quantity,
-    });
+      const result = await timed("registerForWishlist", () =>
+        registerForWishlist({
+          userId: user.id,
+          itemId,
+          queueType: requestedQueueType,
+          quantity,
+        }),
+      );
 
-    return result.ok ? success(result.message) : failure(result.message);
-  });
+      return result.ok ? success(result.message) : failure(result.message);
+    }),
+  );
 }
 
 export async function withdrawAction(
